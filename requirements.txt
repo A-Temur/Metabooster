@@ -1,0 +1,5 @@
+pillow~=11.1.0
+pymediainfo~=7.0.1
+mutagen~=1.47.0
+easygui~=0.98.3
+PyYAML~=6.0.2

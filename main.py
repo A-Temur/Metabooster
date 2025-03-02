@@ -1,0 +1,244 @@
+"""
+Copyright Abdullah Temur. All rights reserved.
+"""
+import datetime
+
+from PIL import Image
+from easygui import diropenbox, enterbox
+from mutagen.mp4 import MP4
+from shutil import copytree
+import os
+import subprocess
+import yaml
+import json
+
+
+def get_video_duration(video_path):
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "json", video_path],
+        capture_output=True, text=True
+    )
+    metadata = json.loads(result.stdout)
+    duration = float(metadata["format"]["duration"])
+    minutes = int(duration // 60)
+    seconds = int(duration % 60)
+    iso_duration = f"PT{minutes}M{seconds}S"
+    return iso_duration
+
+def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
+    try:
+        img = Image.open(file_path_)
+        exif_data = img.getexif()
+
+        # append filename into metadata title
+        metadata_["40091"] += file_name_.encode("utf-16le")
+        for tag, value in metadata_.items():
+            exif_data[int(tag)] = value
+
+        img.save(file_path_, exif=exif_data)
+
+        # update name and id
+        metadata_jsonld_["name"] += file_name_
+        metadata_jsonld_["@id"] += file_name_
+        # paste path
+        relative_path = os.path.relpath(file_path_, working_directory)
+        metadata_jsonld_["contentUrl"] = relative_path
+        # append to json-ld
+        json_ld["@graph"].append(metadata_jsonld_)
+        print(f"Created modified image: {file_path_}")
+    except Exception as e:
+        print(f"Error processing image {file_path_}: {e}")
+
+def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
+    try:
+        if file_path_.lower().endswith(".mp4"):
+
+            video = MP4(file_path_)
+
+            # append filename into metadata title
+            metadata_["\xa9nam"] += file_name_
+
+            for tag, value in metadata_.items():
+                video[tag] = value
+
+            video.save()
+
+            # update name and id
+            metadata_jsonld_["name"] += file_name_
+            metadata_jsonld_["@id"] += file_name_
+            # paste path
+            relative_path = os.path.relpath(file_path_, working_directory)
+            metadata_jsonld_["contentUrl"] = relative_path
+            # calc and paste duration
+            metadata_jsonld_["duration"] = get_video_duration(file_path_)
+            # generate and paste thumbnailUrl
+            thumbnail_name = file_name_ + "_thumbnail.jpg"
+            thumbnail_url = relative_path.replace(file_name_ + ".mp4", thumbnail_name)
+            metadata_jsonld_["thumbnailUrl"] = thumbnail_url
+            # append to json-ld
+            json_ld["@graph"].append(metadata_jsonld_)
+            print(f"Created modified video: {file_path_}")
+        else:
+            print(f"Skipping non-MP4 video file: {file_path_}")
+    except Exception as e:
+        print(f"Error processing video {file_path_}: {e}")
+
+# def add_metadata_to_gif(image_path, metadata_):
+#     try:
+#         for key, value in metadata_.items():
+#             cmd = ["exiftool", f"-{key}={value}", image_path]
+#             subprocess.run(cmd, check=True)
+#
+#         os.remove(image_path + "_original")
+#
+#         print(f"Metadata added to: {image_path}")
+#
+#     except Exception as e:
+#         print(f"Error adding metadata to {image_path}: {e}")
+
+
+if __name__ == "__main__":
+    # Convert string keys to EXIF tag IDs if possible
+    # from PIL.ExifTags import TAGS
+    # exif_tag_map = {TAGS[key]: key for key in TAGS if isinstance(key, int)}
+
+    autor = "Abdullah Temur - OG-Brain.com"
+    copyright_ = "Copyright 2025 OG-Brain.com, Abdullah Temur. All rights reserved."
+    default_media_description = "Media for OG-Brain.com"
+    keywords = ["OG-Brain", "Abdullah Temur", "Bio-inspired AI"]
+    media_title_prefix = "OG-Brain.com "
+    directory_title_prefix = "OG-Brain.com directory "
+    default_directory_description = "Directory metadata file"
+    default_date = datetime.datetime.now().isoformat()
+
+    default_name_jsonld_file = "media_jsonld.json"
+
+    # default json ld head
+    json_ld = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "CreativeWork",
+                "license": "license.txt",
+                "description": default_media_description,
+                "author": {
+                    "@type": "Person",
+                    "name": autor
+                }
+            },
+        ]
+    }
+
+    # for images
+    metadata_img = {
+        "40091": media_title_prefix.encode("utf-16le"),  # title, must be encoded also
+        "315": autor,  # artist
+        "40093": autor.encode("utf-16le"),  # autor
+        "33432": copyright_,  # copyright
+        "270": default_media_description,  # description
+        "40094": ", ".join(keywords).encode("utf-16le")  # keywords comma separated string
+    }
+    metadata_json_ld_img = {
+        "@type": "ImageObject",
+        "@id": "#",
+        "contentUrl": "",
+        "name": media_title_prefix
+    }
+
+    # for videos
+    metadata_vid = {
+        "\xa9nam": media_title_prefix,  # title
+        "\xa9ART": autor,  # artist
+        "cprt": copyright_,  # copyright
+        "\xa9des": default_media_description,  # description
+        "\xa9key": keywords  # keywords as list
+    }
+
+    metadata_json_ld_vid = {
+        "@type": "VideoObject",
+        "@id": "#",
+        "name": media_title_prefix,
+        "thumbnailUrl": "",
+        "contentUrl": "",
+        "duration": "",
+        "description": default_media_description
+    }
+
+    # for gifs
+    metadata_gif = {
+        "Title": media_title_prefix,
+        "Author": autor,
+        "Comment": default_media_description,
+        "Rights": copyright_,
+        "Subject": "; ".join(keywords),  #  keywords semicolon separated string
+        "Description": default_media_description,
+        "Creator": autor
+    }
+
+    # for directories
+    metadata_yaml = {
+                "title": directory_title_prefix,
+                "author": autor,
+                "description": default_directory_description,
+                "keywords": ", ".join(keywords),
+                "copyright": copyright_,
+                "created": default_date,
+    }
+
+    directory = diropenbox("Enter the parent directory: ")
+
+    final_dir_name = enterbox("Enter destination directory name")
+
+    original_dir_name = directory.split("/")[-1]
+
+    final_dir = directory.replace(original_dir_name, final_dir_name)
+
+    copytree(directory, final_dir)
+
+    working_directory = final_dir
+
+
+    for root, dirs, files in os.walk(final_dir):
+
+        # create metadata file for each directory
+        for dir_name in dirs:
+            metadata_file = os.path.join(root, dir_name, ".metadata.yaml")
+
+            metadata_content = metadata_yaml.copy()
+            metadata_content["title"] += dir_name
+
+            with open(metadata_file, "w", encoding="utf-8") as f:
+                yaml.dump(metadata_content, f, default_flow_style=False, allow_unicode=True)
+        # edit metadata of media (videos, images)
+        for file in files:
+            file_path = os.path.join(root, file)
+
+            # get filename without extension
+            file_name = file_path.split("/")[-1].split(".")[0]
+
+            if file.lower().endswith((".jpg", ".jpeg", ".png")):
+                metadata_img_cpy = metadata_img.copy()
+
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
+
+                add_metadata_to_image(file_path, metadata_img_cpy, file_name, json_ld_img_cpy)
+            elif file.lower().endswith((".mp4", ".mov")):
+                metadata_vid_cpy = metadata_vid.copy()
+
+                # copy default json-ld for videos
+                json_ld_vid_cpy = metadata_json_ld_vid.copy()
+
+                add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
+            elif file.lower().endswith(".gif"):
+                # add_metadata_to_gif(file_path, metadata_gif)
+                pass
+            else:
+                print(f"Skipping unsupported file: {file_path}")
+
+    # Save JSON content to a file
+    with open(final_dir + os.sep + default_name_jsonld_file, "w", encoding="utf-8") as json_file:
+        # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
+        # noinspection PyTypeChecker
+        json.dump(json_ld, json_file, indent=4)
