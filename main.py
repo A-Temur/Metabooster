@@ -26,13 +26,20 @@ def get_video_duration(video_path):
     iso_duration = f"PT{minutes}M{seconds}S"
     return iso_duration
 
+
 def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
     try:
         img = Image.open(file_path_)
         exif_data = img.getexif()
 
+        file_name_extended = file_path_.split("/")[-1]
+
         # append filename into metadata title
         metadata_["40091"] += file_name_.encode("utf-16le")
+        # add custom description if available
+        if file_name_extended in custom_descriptions.keys():
+            metadata_["270"] = custom_descriptions[file_name_extended]
+
         for tag, value in metadata_.items():
             exif_data[int(tag)] = value
 
@@ -43,21 +50,28 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
-        metadata_jsonld_["contentUrl"] = relative_path
+        metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
         json_ld["@graph"].append(metadata_jsonld_)
         print(f"Created modified image: {file_path_}")
     except Exception as e:
         print(f"Error processing image {file_path_}: {e}")
 
+
 def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
     try:
         if file_path_.lower().endswith(".mp4"):
 
             video = MP4(file_path_)
+            custom_description_available = False
+            file_name_extended = file_name_ + ".mp4"
 
             # append filename into metadata title
             metadata_["\xa9nam"] += file_name_
+            # add custom description if available
+            if file_name_extended in custom_descriptions.keys():
+                custom_description_available = True
+                metadata_["\xa9des"] = custom_descriptions[file_name_extended]
 
             for tag, value in metadata_.items():
                 video[tag] = value
@@ -69,13 +83,16 @@ def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
             metadata_jsonld_["@id"] += file_name_
             # paste path
             relative_path = os.path.relpath(file_path_, working_directory)
-            metadata_jsonld_["contentUrl"] = relative_path
+            metadata_jsonld_["contentUrl"] = website + relative_path
             # calc and paste duration
             metadata_jsonld_["duration"] = get_video_duration(file_path_)
             # generate and paste thumbnailUrl
             thumbnail_name = file_name_ + "_thumbnail.jpg"
             thumbnail_url = relative_path.replace(file_name_ + ".mp4", thumbnail_name)
-            metadata_jsonld_["thumbnailUrl"] = thumbnail_url
+            metadata_jsonld_["thumbnailUrl"] = website + thumbnail_url
+            # add custom description if any
+            if custom_description_available:
+                metadata_jsonld_["description"] = custom_descriptions[file_name_extended]
             # append to json-ld
             json_ld["@graph"].append(metadata_jsonld_)
             print(f"Created modified video: {file_path_}")
@@ -84,18 +101,35 @@ def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
     except Exception as e:
         print(f"Error processing video {file_path_}: {e}")
 
-# def add_metadata_to_gif(image_path, metadata_):
-#     try:
-#         for key, value in metadata_.items():
-#             cmd = ["exiftool", f"-{key}={value}", image_path]
-#             subprocess.run(cmd, check=True)
-#
-#         os.remove(image_path + "_original")
-#
-#         print(f"Metadata added to: {image_path}")
-#
-#     except Exception as e:
-#         print(f"Error adding metadata to {image_path}: {e}")
+
+def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
+    try:
+        # append filename to title
+        metadata_["Title"] += file_name_
+
+        file_name_extended = file_name_ + ".gif"
+
+        # add custom description if available
+        if file_name_extended in custom_descriptions.keys():
+            metadata_["Description"] = custom_descriptions[file_name_extended]
+
+        for key, value in metadata_.items():
+            cmd = ["exiftool", f"-{key}={value}", file_path_]
+            subprocess.run(cmd, check=True)
+
+        # update name and id
+        metadata_jsonld_["name"] += file_name_
+        metadata_jsonld_["@id"] += file_name_
+        # paste path
+        relative_path = os.path.relpath(file_path_, working_directory)
+        metadata_jsonld_["contentUrl"] = website + relative_path
+        # append to json-ld
+        json_ld["@graph"].append(metadata_jsonld_)
+
+        # exiftool automatically keeps the original file, delete it
+        os.remove(file_path_ + "_original")
+    except Exception as e:
+        print(f"Error adding metadata to {file_path_}: {e}")
 
 
 if __name__ == "__main__":
@@ -114,13 +148,27 @@ if __name__ == "__main__":
 
     default_name_jsonld_file = "media_jsonld.json"
 
+    website = "https://www.og-brain.com/"
+
+    custom_descriptions = {
+    "emitting.gif": "Neurons Emitting electricity",
+    "electricity.jpg": "General overview of some features, including electricity, branching/growing...",
+    "component_arrangement.gif": "Showcase Example of Arranging Neuron Components 1",
+    "component_arrangement_alt.jpg": "Showcase Example of Arranging Neuron Components 2",
+    "path_finding_2.jpg": "a neuron calculating the shortest path",
+    "detection.mp4": "objects can sense other objects and electromagnetic waves",
+    "branch_creation.mp4": "Customizable branching options based on specific conditions and thresholds",
+    "clustering.mp4": "OG-Brain can mimic microevolution and cluster objects based on several conditions",
+    "final_form.mp4": "Final video showcasing OG-Brain's major features"
+    }
+
     # default json ld head
     json_ld = {
         "@context": "https://schema.org",
         "@graph": [
             {
                 "@type": "CreativeWork",
-                "license": "license.txt",
+                "license": f"{website}license.txt",
                 "description": default_media_description,
                 "author": {
                     "@type": "Person",
@@ -171,19 +219,19 @@ if __name__ == "__main__":
         "Author": autor,
         "Comment": default_media_description,
         "Rights": copyright_,
-        "Subject": "; ".join(keywords),  #  keywords semicolon separated string
+        "Subject": "; ".join(keywords),  # keywords semicolon separated string
         "Description": default_media_description,
         "Creator": autor
     }
 
     # for directories
     metadata_yaml = {
-                "title": directory_title_prefix,
-                "author": autor,
-                "description": default_directory_description,
-                "keywords": ", ".join(keywords),
-                "copyright": copyright_,
-                "created": default_date,
+        "title": directory_title_prefix,
+        "author": autor,
+        "description": default_directory_description,
+        "keywords": ", ".join(keywords),
+        "copyright": copyright_,
+        "created": default_date,
     }
 
     directory = diropenbox("Enter the parent directory: ")
@@ -197,7 +245,6 @@ if __name__ == "__main__":
     copytree(directory, final_dir)
 
     working_directory = final_dir
-
 
     for root, dirs, files in os.walk(final_dir):
 
@@ -232,8 +279,13 @@ if __name__ == "__main__":
 
                 add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
             elif file.lower().endswith(".gif"):
-                # add_metadata_to_gif(file_path, metadata_gif)
-                pass
+                metadata_gif_cpy = metadata_gif.copy()
+
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
+
+                add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
+
             else:
                 print(f"Skipping unsupported file: {file_path}")
 
