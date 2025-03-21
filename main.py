@@ -4,6 +4,7 @@ Copyright Abdullah Temur. All rights reserved.
 import datetime
 
 from PIL import Image
+from bs4 import BeautifulSoup
 from easygui import diropenbox, enterbox
 from mutagen.mp4 import MP4
 from shutil import copytree
@@ -144,6 +145,22 @@ def get_html_css_comment(file_name_, html=True):
     return comment
 
 
+# def format_html_section(file_reader_):
+#     # Extract head section
+#     match = re.search(r'(<head.*?>)(.*?)(</head>)', file_reader_, re.DOTALL)
+#     if match:
+#         head_open, head_content, head_close = match.groups()
+#
+#         # Format only the head content
+#         soup = BeautifulSoup(head_content, 'html.parser')
+#         pretty_head = f"{head_open}\n{soup.prettify()}\n{head_close}"
+#
+#         # Replace in full HTML
+#         formatted_html = file_reader_[:match.start()] + pretty_head + file_reader_[match.end():]
+#
+#         return formatted_html
+
+
 if __name__ == "__main__":
     # Convert string keys to EXIF tag IDs if possible
     # from PIL.ExifTags import TAGS
@@ -157,6 +174,8 @@ if __name__ == "__main__":
     directory_title_prefix = "OG-Brain.com directory "
     default_directory_description = "Directory metadata file"
     default_date = datetime.datetime.now().isoformat()
+
+    add_metadata_json_to_html_file = "index.html"
 
     default_name_jsonld_file = "media_jsonld.json"
 
@@ -353,3 +372,24 @@ if __name__ == "__main__":
         # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
         # noinspection PyTypeChecker
         json.dump(json_ld, json_file, indent=4)
+
+    #
+    # with open(final_dir + os.sep + add_metadata_json_to_html_file, "r", encoding="utf-8") as html_reader:
+    #     original_file = html_reader.read()
+    #     reader = BeautifulSoup(original_file, "html.parser")
+    #
+    # script_element = reader.find("script", attrs={"type": "application/ld+json"})
+    # if not script_element:
+    #     new_script_element = reader.new_tag("script", type="application/ld+json")
+    #     new_script_element.string = json.dumps(json_ld, indent=4)
+    #     reader.find("head").append(new_script_element)
+    # else:
+    #     script_element.string = json.dumps(json_ld, indent=4)
+    #
+    # only_new_head = reader.head.prettify()
+    #
+    # newer = re.sub(r"<head>.*?</head>", only_new_head, original_file, flags=re.DOTALL)
+    #
+    # with open(final_dir + os.sep + add_metadata_json_to_html_file, "w", encoding="utf-8") as html_writer:
+    #     html_writer.write(newer)
+    #
