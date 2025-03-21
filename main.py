@@ -11,6 +11,7 @@ import os
 import subprocess
 import yaml
 import json
+import re
 
 
 def get_video_duration(video_path):
@@ -132,6 +133,17 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
         print(f"Error adding metadata to {file_path_}: {e}")
 
 
+def get_html_css_comment(file_name_, html=True):
+    metadata_ = metadata_html_css.copy()
+    metadata_["Description"] = f"{file_name_} for {media_title_prefix}"
+    metadata_ = "\n".join(f"{k}: {v}" for k, v in metadata_.items())
+    if html:
+        comment = html_brackets[0] + "\n" + metadata_ + "\n" + html_brackets[1]
+    else:
+        comment = css_brackets[0] + "\n" + metadata_ + "\n" + css_brackets[1]
+    return comment
+
+
 if __name__ == "__main__":
     # Convert string keys to EXIF tag IDs if possible
     # from PIL.ExifTags import TAGS
@@ -151,15 +163,15 @@ if __name__ == "__main__":
     website = "https://www.og-brain.com/"
 
     custom_descriptions = {
-    "emitting.gif": "Neurons Emitting electricity",
-    "electricity.jpg": "General overview of some features, including electricity, branching/growing...",
-    "component_arrangement.gif": "Showcase Example of Arranging Neuron Components 1",
-    "component_arrangement_alt.jpg": "Showcase Example of Arranging Neuron Components 2",
-    "path_finding_2.jpg": "a neuron calculating the shortest path",
-    "detection.mp4": "objects can sense other objects and electromagnetic waves",
-    "branch_creation.mp4": "Customizable branching options based on specific conditions and thresholds",
-    "clustering.mp4": "OG-Brain can mimic microevolution and cluster objects based on several conditions",
-    "final_form.mp4": "Final video showcasing OG-Brain's major features"
+        "emitting.gif": "Neurons Emitting electricity",
+        "electricity.jpg": "General overview of some features, including electricity, branching/growing...",
+        "component_arrangement.gif": "Showcase Example of Arranging Neuron Components 1",
+        "component_arrangement_alt.jpg": "Showcase Example of Arranging Neuron Components 2",
+        "path_finding_2.jpg": "a neuron calculating the shortest path",
+        "detection.mp4": "objects can sense other objects and electromagnetic waves",
+        "branch_creation.mp4": "Customizable branching options based on specific conditions and thresholds",
+        "clustering.mp4": "OG-Brain can mimic microevolution and cluster objects based on several conditions",
+        "final_form.mp4": "Final video showcasing OG-Brain's major features"
     }
 
     # default json ld head
@@ -234,6 +246,17 @@ if __name__ == "__main__":
         "created": default_date,
     }
 
+    # for css and html files
+    metadata_html_css = {
+        "Author": autor,
+        "Description": default_directory_description,
+        "Copyright": copyright_,
+        "Keywords": ", ".join(keywords),
+    }
+
+    html_brackets = ("<!--", "-->")
+    css_brackets = ("/*", "*/")
+
     directory = diropenbox("Enter the parent directory: ")
 
     final_dir_name = enterbox("Enter destination directory name")
@@ -285,6 +308,42 @@ if __name__ == "__main__":
                 json_ld_img_cpy = metadata_json_ld_img.copy()
 
                 add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
+
+            elif file.lower().endswith(".html"):
+                # metadata_html = metadata_html_css.copy()
+                # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
+                # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
+                # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
+                html_comment = get_html_css_comment(file_name)
+                with open(file_path, "r", encoding="utf-8") as html_file:
+                    original_content = html_file.read()
+
+                if html_comment not in original_content:
+                    with open(file_path, "w", encoding="utf-8") as html_file:
+                        finder = re.findall(r"(?s)<!--.*?-->", original_content)
+                        if "Copyright:" in finder[0]:
+                            new_content = original_content.replace(finder[0], html_comment)
+                        else:
+                            new_content = html_comment + "\n" + original_content
+                        html_file.write(new_content)
+
+            elif file.lower().endswith(".css"):
+                # metadata_css = metadata_html_css.copy()
+                # metadata_css["Description"] = f"{file_name} for {media_title_prefix}"
+                # metadata_css = "\n".join(f"{k}: {v}" for k, v in metadata_css.items())
+                # css_comment = css_brackets[0] + "\n" + metadata_css + "\n" + css_brackets[1]
+                css_comment = get_html_css_comment(file_name, False)
+                with open(file_path, "r", encoding="utf-8") as css_file:
+                    original_content = css_file.read()
+
+                if css_comment not in original_content:
+                    with open(file_path, "w", encoding="utf-8") as css_file:
+                        finder = re.findall(r"(?s)/\*.*?\*/", original_content)
+                        if "Copyright:" in finder[0]:
+                            new_content = original_content.replace(finder[0], css_comment)
+                        else:
+                            new_content = css_comment + "\n" + original_content
+                        css_file.write(new_content)
 
             else:
                 print(f"Skipping unsupported file: {file_path}")
