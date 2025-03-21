@@ -373,23 +373,19 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         json.dump(json_ld, json_file, indent=4)
 
-    #
-    # with open(final_dir + os.sep + add_metadata_json_to_html_file, "r", encoding="utf-8") as html_reader:
-    #     original_file = html_reader.read()
-    #     reader = BeautifulSoup(original_file, "html.parser")
-    #
-    # script_element = reader.find("script", attrs={"type": "application/ld+json"})
-    # if not script_element:
-    #     new_script_element = reader.new_tag("script", type="application/ld+json")
-    #     new_script_element.string = json.dumps(json_ld, indent=4)
-    #     reader.find("head").append(new_script_element)
-    # else:
-    #     script_element.string = json.dumps(json_ld, indent=4)
-    #
-    # only_new_head = reader.head.prettify()
-    #
-    # newer = re.sub(r"<head>.*?</head>", only_new_head, original_file, flags=re.DOTALL)
-    #
-    # with open(final_dir + os.sep + add_metadata_json_to_html_file, "w", encoding="utf-8") as html_writer:
-    #     html_writer.write(newer)
-    #
+    # add metadata json to html
+    html_file_path = final_dir + os.sep + add_metadata_json_to_html_file
+
+    with open(html_file_path, "r", encoding="utf-8") as html_reader:
+         reader = BeautifulSoup(html_reader, "html.parser")
+
+    script_element = reader.find("script", attrs={"type": "application/ld+json"})
+    if not script_element:
+        new_script_element = reader.new_tag("script", type="application/ld+json")
+        new_script_element.string = json.dumps(json_ld, indent=4)
+        reader.find("head").append(new_script_element)
+    else:
+        script_element.string = json.dumps(json_ld, indent=4)
+
+    with open(html_file_path, "w", encoding="utf-8") as html_writer:
+        html_writer.write(reader.prettify(formatter="html"))
