@@ -13,6 +13,7 @@ import subprocess
 import yaml
 import json
 import re
+import exiftool
 
 
 def get_video_duration(video_path):
@@ -28,6 +29,33 @@ def get_video_duration(video_path):
     iso_duration = f"PT{minutes}M{seconds}S"
     return iso_duration
 
+def add_metadata_to_heic_image(file_path_, metadata_, file_name_, metadata_jsonld_):
+    try:
+        file_name_extended = file_path_.split("/")[-1]
+
+        # append filename into metadata title
+        metadata_["Title"] += file_name_
+        # add custom description if available
+        if file_name_extended in custom_descriptions.keys():
+            metadata_["ImageDescription"] = custom_descriptions[file_name_extended]
+
+        with exiftool.ExifToolHelper() as et:
+            et.set_tags(file_path_, tags=metadata_,
+                        params=["-P", "-overwrite_original"])
+            # -P parameter preservers original modification date
+
+        # update name and id
+        metadata_jsonld_["name"] += file_name_
+        metadata_jsonld_["@id"] += file_name_
+        # paste path
+        relative_path = os.path.relpath(file_path_, working_directory)
+        # noinspection PyTypeChecker
+        metadata_jsonld_["contentUrl"] = website + relative_path
+        # append to json-ld
+        json_ld["@graph"].append(metadata_jsonld_)
+        print(f"Created modified image: {file_path_}")
+    except Exception as e:
+        print(f"Error processing image {file_path_}: {e}")
 
 def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
     try:
@@ -52,6 +80,7 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
+        # noinspection PyTypeChecker
         metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
         json_ld["@graph"].append(metadata_jsonld_)
@@ -84,13 +113,15 @@ def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
             metadata_jsonld_["name"] += file_name_
             metadata_jsonld_["@id"] += file_name_
             # paste path
-            relative_path = os.path.relpath(file_path_, working_directory)
+            relative_path  = os.path.relpath(file_path_, working_directory)
+            # noinspection PyTypeChecker
             metadata_jsonld_["contentUrl"] = website + relative_path
             # calc and paste duration
             metadata_jsonld_["duration"] = get_video_duration(file_path_)
             # generate and paste thumbnailUrl
             thumbnail_name = file_name_ + "_thumbnail.jpg"
             thumbnail_url = relative_path.replace(file_name_ + ".mp4", thumbnail_name)
+            # noinspection PyTypeChecker
             metadata_jsonld_["thumbnailUrl"] = website + thumbnail_url
             # add custom description if any
             if custom_description_available:
@@ -124,6 +155,7 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
+        # noinspection PyTypeChecker
         metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
         json_ld["@graph"].append(metadata_jsonld_)
@@ -143,22 +175,6 @@ def get_html_css_comment(file_name_, html=True):
     else:
         comment = css_brackets[0] + "\n" + metadata_ + "\n" + css_brackets[1]
     return comment
-
-
-# def format_html_section(file_reader_):
-#     # Extract head section
-#     match = re.search(r'(<head.*?>)(.*?)(</head>)', file_reader_, re.DOTALL)
-#     if match:
-#         head_open, head_content, head_close = match.groups()
-#
-#         # Format only the head content
-#         soup = BeautifulSoup(head_content, 'html.parser')
-#         pretty_head = f"{head_open}\n{soup.prettify()}\n{head_close}"
-#
-#         # Replace in full HTML
-#         formatted_html = file_reader_[:match.start()] + pretty_head + file_reader_[match.end():]
-#
-#         return formatted_html
 
 
 if __name__ == "__main__":
@@ -273,6 +289,14 @@ if __name__ == "__main__":
         "Keywords": ", ".join(keywords),
     }
 
+    # for heic images
+    metadata_heic = {
+        "Title": media_title_prefix,
+        "Artist": autor,
+        "Copyright": copyright_,
+        "ImageDescription": default_media_description,
+    }
+
     html_brackets = ("<!--", "-->")
     css_brackets = ("/*", "*/")
 
@@ -287,6 +311,8 @@ if __name__ == "__main__":
     copytree(directory, final_dir)
 
     working_directory = final_dir
+
+    html_exists = False
 
     for root, dirs, files in os.walk(final_dir):
 
@@ -306,7 +332,15 @@ if __name__ == "__main__":
             # get filename without extension
             file_name = file_path.split("/")[-1].split(".")[0]
 
-            if file.lower().endswith((".jpg", ".jpeg", ".png")):
+            if file.lower().endswith(".heic"):
+                metadata_heic_cpy = metadata_heic.copy()
+
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
+
+                add_metadata_to_heic_image(file_path, metadata_heic_cpy, file_name, json_ld_img_cpy)
+
+            elif file.lower().endswith((".jpg", ".jpeg", ".png")):
                 metadata_img_cpy = metadata_img.copy()
 
                 # copy default json-ld for images
@@ -333,6 +367,7 @@ if __name__ == "__main__":
                 # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
                 # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
                 # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
+                html_exists = True
                 html_comment = get_html_css_comment(file_name)
                 with open(file_path, "r", encoding="utf-8") as html_file:
                     original_content = html_file.read()
@@ -373,19 +408,38 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         json.dump(json_ld, json_file, indent=4)
 
-    # add metadata json to html
-    html_file_path = final_dir + os.sep + add_metadata_json_to_html_file
+    if html_exists:
 
-    with open(html_file_path, "r", encoding="utf-8") as html_reader:
-         reader = BeautifulSoup(html_reader, "html.parser")
+        # add metadata json to html
+        html_file_path = final_dir + os.sep + add_metadata_json_to_html_file
 
-    script_element = reader.find("script", attrs={"type": "application/ld+json"})
-    if not script_element:
-        new_script_element = reader.new_tag("script", type="application/ld+json")
-        new_script_element.string = json.dumps(json_ld, indent=4)
-        reader.find("head").append(new_script_element)
-    else:
-        script_element.string = json.dumps(json_ld, indent=4)
+        with open(html_file_path, "r", encoding="utf-8") as html_reader:
+            original_html = html_reader.read()
 
-    with open(html_file_path, "w", encoding="utf-8") as html_writer:
-        html_writer.write(reader.prettify(formatter="html"))
+        prettified_html = BeautifulSoup(original_html, "html.parser")
+
+        script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
+        script_element_exists_in_original = True
+        if not script_element:
+            script_element_exists_in_original = False
+            new_script_element = prettified_html.new_tag("script", type="application/ld+json")
+            new_script_element.string = json.dumps(json_ld, indent=4)
+            prettified_html.find("head").append(new_script_element)
+        else:
+            script_element.string = json.dumps(json_ld, indent=4)
+
+        prettified_html = prettified_html.prettify()
+        pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
+                                       re.DOTALL | re.IGNORECASE).group()
+        if not script_element_exists_in_original:
+            final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
+                                original_html,
+                                flags=re.DOTALL | re.IGNORECASE)
+        else:
+            final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
+                                original_html,
+                                flags=re.DOTALL | re.IGNORECASE)
+
+        with open(html_file_path, "w", encoding="utf-8") as html_file:
+            html_file.write(final_html)
+
