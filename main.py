@@ -1,5 +1,5 @@
 """
-Copyright Abdullah Temur. All rights reserved.
+Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 """
 import datetime
 
@@ -197,6 +197,7 @@ if __name__ == "__main__":
 
     website = "https://www.og-brain.com/"
 
+    # in case you want custom description for your media in the jsonld
     custom_descriptions = {
         "emitting.gif": "Neurons Emitting electricity",
         "electricity.jpg": "General overview of some features, including electricity, branching/growing...",
@@ -312,8 +313,6 @@ if __name__ == "__main__":
 
     working_directory = final_dir
 
-    html_exists = False
-
     for root, dirs, files in os.walk(final_dir):
 
         # create metadata file for each directory
@@ -367,7 +366,6 @@ if __name__ == "__main__":
                 # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
                 # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
                 # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
-                html_exists = True
                 html_comment = get_html_css_comment(file_name)
                 with open(file_path, "r", encoding="utf-8") as html_file:
                     original_content = html_file.read()
@@ -408,7 +406,7 @@ if __name__ == "__main__":
         # noinspection PyTypeChecker
         json.dump(json_ld, json_file, indent=4)
 
-    if html_exists:
+    if bool(add_metadata_json_to_html_file):
 
         # add metadata json to html
         html_file_path = final_dir + os.sep + add_metadata_json_to_html_file
