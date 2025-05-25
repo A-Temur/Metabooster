@@ -57,13 +57,15 @@
 
 ## Requirements
 
-* Python 3.13 (but will probably work on other versions too)
+* Python 3.13 with Tcl/Tk runtime (for easygui)
+* exiftool (https://exiftool.org/) and Pip package PyExifTool
+* ffmpeg (https://ffmpeg.org/download.html)
+* on windows add exiftool and ffmpeg to PATH
 * Install required Python packages:
 
    ```bash
    pip install -r requirements.txt
    ```
-* I'm using this script only on Linux currently, so I can't guarantee if this also works on Windows since some python packages require Bash libs (like exiftools)
 
 ---
 

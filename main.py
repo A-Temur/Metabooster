@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from easygui import diropenbox, enterbox
 from mutagen.mp4 import MP4
 from shutil import copytree
+from os.path import basename, splitext
 import os
 import subprocess
 import yaml
@@ -31,7 +32,7 @@ def get_video_duration(video_path):
 
 def add_metadata_to_heic_image(file_path_, metadata_, file_name_, metadata_jsonld_):
     try:
-        file_name_extended = file_path_.split("/")[-1]
+        file_name_extended = basename(file_path_)
 
         # append filename into metadata title
         metadata_["Title"] += file_name_
@@ -49,6 +50,7 @@ def add_metadata_to_heic_image(file_path_, metadata_, file_name_, metadata_jsonl
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
+        relative_path = relative_path.replace(os.sep, "/")
         # noinspection PyTypeChecker
         metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
@@ -62,7 +64,7 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
         img = Image.open(file_path_)
         exif_data = img.getexif()
 
-        file_name_extended = file_path_.split("/")[-1]
+        file_name_extended = basename(file_path_)
 
         # append filename into metadata title
         metadata_["40091"] += file_name_.encode("utf-16le")
@@ -80,6 +82,7 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
+        relative_path = relative_path.replace(os.sep, "/")
         # noinspection PyTypeChecker
         metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
@@ -114,6 +117,7 @@ def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
             metadata_jsonld_["@id"] += file_name_
             # paste path
             relative_path  = os.path.relpath(file_path_, working_directory)
+            relative_path = relative_path.replace(os.sep, "/")
             # noinspection PyTypeChecker
             metadata_jsonld_["contentUrl"] = website + relative_path
             # calc and paste duration
@@ -155,6 +159,7 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
         metadata_jsonld_["@id"] += file_name_
         # paste path
         relative_path = os.path.relpath(file_path_, working_directory)
+        relative_path = relative_path.replace(os.sep, "/")
         # noinspection PyTypeChecker
         metadata_jsonld_["contentUrl"] = website + relative_path
         # append to json-ld
@@ -305,7 +310,7 @@ if __name__ == "__main__":
 
     final_dir_name = enterbox("Enter destination directory name")
 
-    original_dir_name = directory.split("/")[-1]
+    original_dir_name = basename(directory)
 
     final_dir = directory.replace(original_dir_name, final_dir_name)
 
@@ -329,7 +334,7 @@ if __name__ == "__main__":
             file_path = os.path.join(root, file)
 
             # get filename without extension
-            file_name = file_path.split("/")[-1].split(".")[0]
+            file_name = splitext(basename(file_path))[0]
 
             if file.lower().endswith(".heic"):
                 metadata_heic_cpy = metadata_heic.copy()
@@ -373,8 +378,11 @@ if __name__ == "__main__":
                 if html_comment not in original_content:
                     with open(file_path, "w", encoding="utf-8") as html_file:
                         finder = re.findall(r"(?s)<!--.*?-->", original_content)
-                        if "Copyright:" in finder[0]:
-                            new_content = original_content.replace(finder[0], html_comment)
+                        if len(finder) > 0:
+                            if "Copyright:" in finder[0]:
+                                new_content = original_content.replace(finder[0], html_comment)
+                            else:
+                                new_content = html_comment + "\n" + original_content
                         else:
                             new_content = html_comment + "\n" + original_content
                         html_file.write(new_content)
@@ -391,8 +399,11 @@ if __name__ == "__main__":
                 if css_comment not in original_content:
                     with open(file_path, "w", encoding="utf-8") as css_file:
                         finder = re.findall(r"(?s)/\*.*?\*/", original_content)
-                        if "Copyright:" in finder[0]:
-                            new_content = original_content.replace(finder[0], css_comment)
+                        if len(finder) > 0:
+                            if "Copyright:" in finder[0]:
+                                new_content = original_content.replace(finder[0], css_comment)
+                            else:
+                                new_content = css_comment + "\n" + original_content
                         else:
                             new_content = css_comment + "\n" + original_content
                         css_file.write(new_content)
@@ -401,7 +412,7 @@ if __name__ == "__main__":
                 print(f"Skipping unsupported file: {file_path}")
 
     # Save JSON content to a file
-    with open(final_dir + os.sep + default_name_jsonld_file, "w", encoding="utf-8") as json_file:
+    with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
         # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
         # noinspection PyTypeChecker
         json.dump(json_ld, json_file, indent=4)
@@ -409,7 +420,7 @@ if __name__ == "__main__":
     if bool(add_metadata_json_to_html_file):
 
         # add metadata json to html
-        html_file_path = final_dir + os.sep + add_metadata_json_to_html_file
+        html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
 
         with open(html_file_path, "r", encoding="utf-8") as html_reader:
             original_html = html_reader.read()
