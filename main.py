@@ -15,7 +15,34 @@ import yaml
 import json
 import re
 import exiftool
+from conf import *
 
+
+def check_and_write_comment(search_str_, file_writer_, original_content_, new_content_, css=True):
+    if css:
+        finder = re.findall(r"(?s)/\*.*?\*/", original_content)
+    else:
+        finder = re.findall(r"(?s)<!--.*?-->", original_content)
+    if len(finder) > 0:
+        if search_str_ in finder[0]:
+            new_content_ = original_content_.replace(finder[0], new_content_)
+        else:
+            new_content_ = new_content_ + "\n" + original_content
+    else:
+        new_content_ = new_content_ + "\n" + original_content
+    file_writer_.write(new_content_)
+
+def add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_):
+    # update name and id
+    metadata_jsonld_["name"] += file_name_
+    metadata_jsonld_["@id"] += file_name_
+    # paste path
+    relative_path = os.path.relpath(file_path_, working_directory)
+    relative_path = relative_path.replace(os.sep, "/")
+    # noinspection PyTypeChecker
+    metadata_jsonld_["contentUrl"] = website + relative_path
+    # append to json-ld
+    json_ld["@graph"].append(metadata_jsonld_)
 
 def get_video_duration(video_path):
     result = subprocess.run(
@@ -45,16 +72,7 @@ def add_metadata_to_heic_image(file_path_, metadata_, file_name_, metadata_jsonl
                         params=["-P", "-overwrite_original"])
             # -P parameter preservers original modification date
 
-        # update name and id
-        metadata_jsonld_["name"] += file_name_
-        metadata_jsonld_["@id"] += file_name_
-        # paste path
-        relative_path = os.path.relpath(file_path_, working_directory)
-        relative_path = relative_path.replace(os.sep, "/")
-        # noinspection PyTypeChecker
-        metadata_jsonld_["contentUrl"] = website + relative_path
-        # append to json-ld
-        json_ld["@graph"].append(metadata_jsonld_)
+        add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
         print(f"Created modified image: {file_path_}")
     except Exception as e:
         print(f"Error processing image {file_path_}: {e}")
@@ -77,16 +95,7 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
 
         img.save(file_path_, exif=exif_data)
 
-        # update name and id
-        metadata_jsonld_["name"] += file_name_
-        metadata_jsonld_["@id"] += file_name_
-        # paste path
-        relative_path = os.path.relpath(file_path_, working_directory)
-        relative_path = relative_path.replace(os.sep, "/")
-        # noinspection PyTypeChecker
-        metadata_jsonld_["contentUrl"] = website + relative_path
-        # append to json-ld
-        json_ld["@graph"].append(metadata_jsonld_)
+        add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
         print(f"Created modified image: {file_path_}")
     except Exception as e:
         print(f"Error processing image {file_path_}: {e}")
@@ -154,17 +163,8 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
             cmd = ["exiftool", f"-{key}={value}", file_path_]
             subprocess.run(cmd, check=True)
 
-        # update name and id
-        metadata_jsonld_["name"] += file_name_
-        metadata_jsonld_["@id"] += file_name_
-        # paste path
-        relative_path = os.path.relpath(file_path_, working_directory)
-        relative_path = relative_path.replace(os.sep, "/")
-        # noinspection PyTypeChecker
-        metadata_jsonld_["contentUrl"] = website + relative_path
-        # append to json-ld
-        json_ld["@graph"].append(metadata_jsonld_)
-
+        add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
+        print(f"Created modified image: {file_path_}")
         # exiftool automatically keeps the original file, delete it
         os.remove(file_path_ + "_original")
     except Exception as e:
@@ -186,51 +186,8 @@ if __name__ == "__main__":
     # Convert string keys to EXIF tag IDs if possible
     # from PIL.ExifTags import TAGS
     # exif_tag_map = {TAGS[key]: key for key in TAGS if isinstance(key, int)}
-
-    autor = "Abdullah Temur - OG-Brain.com"
-    copyright_ = "Copyright 2025 OG-Brain.com, Abdullah Temur. All rights reserved."
-    default_media_description = "Media for OG-Brain.com"
-    keywords = ["OG-Brain", "Abdullah Temur", "Bio-inspired AI"]
-    media_title_prefix = "OG-Brain.com "
-    directory_title_prefix = "OG-Brain.com directory "
-    default_directory_description = "Directory metadata file"
     default_date = datetime.datetime.now().isoformat()
 
-    # leave string empty, if there is no need to insert jsonld into html
-    add_metadata_json_to_html_file = "index.html"
-
-    default_name_jsonld_file = "media_jsonld.json"
-
-    website = "https://www.og-brain.com/"
-
-    # in case you want custom description for your media in the jsonld
-    custom_descriptions = {
-        "emitting.gif": "Neurons Emitting electricity",
-        "electricity.jpg": "General overview of some features, including electricity, branching/growing...",
-        "component_arrangement.gif": "Showcase Example of Arranging Neuron Components 1",
-        "component_arrangement_alt.jpg": "Showcase Example of Arranging Neuron Components 2",
-        "path_finding_2.jpg": "a neuron calculating the shortest path",
-        "detection.mp4": "objects can sense other objects and electromagnetic waves",
-        "branch_creation.mp4": "Customizable branching options based on specific conditions and thresholds",
-        "clustering.mp4": "OG-Brain can mimic microevolution and cluster objects based on several conditions",
-        "final_form.mp4": "Final video showcasing OG-Brain's major features"
-    }
-
-    # default json ld head
-    json_ld = {
-        "@context": "https://schema.org",
-        "@graph": [
-            {
-                "@type": "CreativeWork",
-                "license": f"{website}license.txt",
-                "description": default_media_description,
-                "author": {
-                    "@type": "Person",
-                    "name": autor
-                }
-            },
-        ]
-    }
 
     # for images
     metadata_img = {
@@ -380,15 +337,7 @@ if __name__ == "__main__":
 
                         if html_comment not in original_content:
                             with open(file_path, "w", encoding="utf-8") as html_file:
-                                finder = re.findall(r"(?s)<!--.*?-->", original_content)
-                                if len(finder) > 0:
-                                    if "Copyright:" in finder[0]:
-                                        new_content = original_content.replace(finder[0], html_comment)
-                                    else:
-                                        new_content = html_comment + "\n" + original_content
-                                else:
-                                    new_content = html_comment + "\n" + original_content
-                                html_file.write(new_content)
+                                check_and_write_comment("Copyright:", html_file, original_content, html_comment, False)
 
                     elif file.lower().endswith(".css"):
                         # metadata_css = metadata_html_css.copy()
@@ -401,15 +350,7 @@ if __name__ == "__main__":
 
                         if css_comment not in original_content:
                             with open(file_path, "w", encoding="utf-8") as css_file:
-                                finder = re.findall(r"(?s)/\*.*?\*/", original_content)
-                                if len(finder) > 0:
-                                    if "Copyright:" in finder[0]:
-                                        new_content = original_content.replace(finder[0], css_comment)
-                                    else:
-                                        new_content = css_comment + "\n" + original_content
-                                else:
-                                    new_content = css_comment + "\n" + original_content
-                                css_file.write(new_content)
+                                check_and_write_comment("Copyright:", css_file, original_content, css_comment, True)
 
                     else:
                         print(f"Skipping unsupported file: {file_path}")
