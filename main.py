@@ -196,6 +196,7 @@ if __name__ == "__main__":
     default_directory_description = "Directory metadata file"
     default_date = datetime.datetime.now().isoformat()
 
+    # leave string empty, if there is no need to insert jsonld into html
     add_metadata_json_to_html_file = "index.html"
 
     default_name_jsonld_file = "media_jsonld.json"
@@ -308,147 +309,149 @@ if __name__ == "__main__":
 
     directory = diropenbox("Enter the parent directory: ")
 
-    final_dir_name = enterbox("Enter destination directory name")
+    if directory:
+        final_dir_name = enterbox("Enter destination directory name")
 
-    original_dir_name = basename(directory)
+        if final_dir_name:
+            original_dir_name = basename(directory)
 
-    final_dir = directory.replace(original_dir_name, final_dir_name)
+            final_dir = directory.replace(original_dir_name, final_dir_name)
 
-    copytree(directory, final_dir)
+            copytree(directory, final_dir)
 
-    working_directory = final_dir
+            working_directory = final_dir
 
-    for root, dirs, files in os.walk(final_dir):
+            for root, dirs, files in os.walk(final_dir):
 
-        # create metadata file for each directory
-        for dir_name in dirs:
-            metadata_file = os.path.join(root, dir_name, ".metadata.yaml")
+                # create metadata file for each directory
+                for dir_name in dirs:
+                    metadata_file = os.path.join(root, dir_name, ".metadata.yaml")
 
-            metadata_content = metadata_yaml.copy()
-            metadata_content["title"] += dir_name
+                    metadata_content = metadata_yaml.copy()
+                    metadata_content["title"] += dir_name
 
-            with open(metadata_file, "w", encoding="utf-8") as f:
-                yaml.dump(metadata_content, f, default_flow_style=False, allow_unicode=True)
-        # edit metadata of media (videos, images)
-        for file in files:
-            file_path = os.path.join(root, file)
+                    with open(metadata_file, "w", encoding="utf-8") as f:
+                        yaml.dump(metadata_content, f, default_flow_style=False, allow_unicode=True)
+                # edit metadata of media (videos, images)
+                for file in files:
+                    file_path = os.path.join(root, file)
 
-            # get filename without extension
-            file_name = splitext(basename(file_path))[0]
+                    # get filename without extension
+                    file_name = splitext(basename(file_path))[0]
 
-            if file.lower().endswith(".heic"):
-                metadata_heic_cpy = metadata_heic.copy()
+                    if file.lower().endswith(".heic"):
+                        metadata_heic_cpy = metadata_heic.copy()
 
-                # copy default json-ld for images
-                json_ld_img_cpy = metadata_json_ld_img.copy()
+                        # copy default json-ld for images
+                        json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                add_metadata_to_heic_image(file_path, metadata_heic_cpy, file_name, json_ld_img_cpy)
+                        add_metadata_to_heic_image(file_path, metadata_heic_cpy, file_name, json_ld_img_cpy)
 
-            elif file.lower().endswith((".jpg", ".jpeg", ".png")):
-                metadata_img_cpy = metadata_img.copy()
+                    elif file.lower().endswith((".jpg", ".jpeg", ".png")):
+                        metadata_img_cpy = metadata_img.copy()
 
-                # copy default json-ld for images
-                json_ld_img_cpy = metadata_json_ld_img.copy()
+                        # copy default json-ld for images
+                        json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                add_metadata_to_image(file_path, metadata_img_cpy, file_name, json_ld_img_cpy)
-            elif file.lower().endswith((".mp4", ".mov")):
-                metadata_vid_cpy = metadata_vid.copy()
+                        add_metadata_to_image(file_path, metadata_img_cpy, file_name, json_ld_img_cpy)
+                    elif file.lower().endswith((".mp4", ".mov")):
+                        metadata_vid_cpy = metadata_vid.copy()
 
-                # copy default json-ld for videos
-                json_ld_vid_cpy = metadata_json_ld_vid.copy()
+                        # copy default json-ld for videos
+                        json_ld_vid_cpy = metadata_json_ld_vid.copy()
 
-                add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
-            elif file.lower().endswith(".gif"):
-                metadata_gif_cpy = metadata_gif.copy()
+                        add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
+                    elif file.lower().endswith(".gif"):
+                        metadata_gif_cpy = metadata_gif.copy()
 
-                # copy default json-ld for images
-                json_ld_img_cpy = metadata_json_ld_img.copy()
+                        # copy default json-ld for images
+                        json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
+                        add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
 
-            elif file.lower().endswith(".html"):
-                # metadata_html = metadata_html_css.copy()
-                # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
-                # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
-                # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
-                html_comment = get_html_css_comment(file_name)
-                with open(file_path, "r", encoding="utf-8") as html_file:
-                    original_content = html_file.read()
+                    elif file.lower().endswith(".html"):
+                        # metadata_html = metadata_html_css.copy()
+                        # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
+                        # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
+                        # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
+                        html_comment = get_html_css_comment(file_name)
+                        with open(file_path, "r", encoding="utf-8") as html_file:
+                            original_content = html_file.read()
 
-                if html_comment not in original_content:
-                    with open(file_path, "w", encoding="utf-8") as html_file:
-                        finder = re.findall(r"(?s)<!--.*?-->", original_content)
-                        if len(finder) > 0:
-                            if "Copyright:" in finder[0]:
-                                new_content = original_content.replace(finder[0], html_comment)
-                            else:
-                                new_content = html_comment + "\n" + original_content
-                        else:
-                            new_content = html_comment + "\n" + original_content
-                        html_file.write(new_content)
+                        if html_comment not in original_content:
+                            with open(file_path, "w", encoding="utf-8") as html_file:
+                                finder = re.findall(r"(?s)<!--.*?-->", original_content)
+                                if len(finder) > 0:
+                                    if "Copyright:" in finder[0]:
+                                        new_content = original_content.replace(finder[0], html_comment)
+                                    else:
+                                        new_content = html_comment + "\n" + original_content
+                                else:
+                                    new_content = html_comment + "\n" + original_content
+                                html_file.write(new_content)
 
-            elif file.lower().endswith(".css"):
-                # metadata_css = metadata_html_css.copy()
-                # metadata_css["Description"] = f"{file_name} for {media_title_prefix}"
-                # metadata_css = "\n".join(f"{k}: {v}" for k, v in metadata_css.items())
-                # css_comment = css_brackets[0] + "\n" + metadata_css + "\n" + css_brackets[1]
-                css_comment = get_html_css_comment(file_name, False)
-                with open(file_path, "r", encoding="utf-8") as css_file:
-                    original_content = css_file.read()
+                    elif file.lower().endswith(".css"):
+                        # metadata_css = metadata_html_css.copy()
+                        # metadata_css["Description"] = f"{file_name} for {media_title_prefix}"
+                        # metadata_css = "\n".join(f"{k}: {v}" for k, v in metadata_css.items())
+                        # css_comment = css_brackets[0] + "\n" + metadata_css + "\n" + css_brackets[1]
+                        css_comment = get_html_css_comment(file_name, False)
+                        with open(file_path, "r", encoding="utf-8") as css_file:
+                            original_content = css_file.read()
 
-                if css_comment not in original_content:
-                    with open(file_path, "w", encoding="utf-8") as css_file:
-                        finder = re.findall(r"(?s)/\*.*?\*/", original_content)
-                        if len(finder) > 0:
-                            if "Copyright:" in finder[0]:
-                                new_content = original_content.replace(finder[0], css_comment)
-                            else:
-                                new_content = css_comment + "\n" + original_content
-                        else:
-                            new_content = css_comment + "\n" + original_content
-                        css_file.write(new_content)
+                        if css_comment not in original_content:
+                            with open(file_path, "w", encoding="utf-8") as css_file:
+                                finder = re.findall(r"(?s)/\*.*?\*/", original_content)
+                                if len(finder) > 0:
+                                    if "Copyright:" in finder[0]:
+                                        new_content = original_content.replace(finder[0], css_comment)
+                                    else:
+                                        new_content = css_comment + "\n" + original_content
+                                else:
+                                    new_content = css_comment + "\n" + original_content
+                                css_file.write(new_content)
 
-            else:
-                print(f"Skipping unsupported file: {file_path}")
+                    else:
+                        print(f"Skipping unsupported file: {file_path}")
 
-    # Save JSON content to a file
-    with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
-        # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
-        # noinspection PyTypeChecker
-        json.dump(json_ld, json_file, indent=4)
+            # Save JSON content to a file
+            with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
+                # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
+                # noinspection PyTypeChecker
+                json.dump(json_ld, json_file, indent=4)
 
-    if bool(add_metadata_json_to_html_file):
+            if bool(add_metadata_json_to_html_file):
 
-        # add metadata json to html
-        html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
+                # add metadata json to html
+                html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
 
-        with open(html_file_path, "r", encoding="utf-8") as html_reader:
-            original_html = html_reader.read()
+                with open(html_file_path, "r", encoding="utf-8") as html_reader:
+                    original_html = html_reader.read()
 
-        prettified_html = BeautifulSoup(original_html, "html.parser")
+                prettified_html = BeautifulSoup(original_html, "html.parser")
 
-        script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
-        script_element_exists_in_original = True
-        if not script_element:
-            script_element_exists_in_original = False
-            new_script_element = prettified_html.new_tag("script", type="application/ld+json")
-            new_script_element.string = json.dumps(json_ld, indent=4)
-            prettified_html.find("head").append(new_script_element)
-        else:
-            script_element.string = json.dumps(json_ld, indent=4)
+                script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
+                script_element_exists_in_original = True
+                if not script_element:
+                    script_element_exists_in_original = False
+                    new_script_element = prettified_html.new_tag("script", type="application/ld+json")
+                    new_script_element.string = json.dumps(json_ld, indent=4)
+                    prettified_html.find("head").append(new_script_element)
+                else:
+                    script_element.string = json.dumps(json_ld, indent=4)
 
-        prettified_html = prettified_html.prettify()
-        pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
-                                       re.DOTALL | re.IGNORECASE).group()
-        if not script_element_exists_in_original:
-            final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
-                                original_html,
-                                flags=re.DOTALL | re.IGNORECASE)
-        else:
-            final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
-                                original_html,
-                                flags=re.DOTALL | re.IGNORECASE)
+                prettified_html = prettified_html.prettify()
+                pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
+                                               re.DOTALL | re.IGNORECASE).group()
+                if not script_element_exists_in_original:
+                    final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
+                                        original_html,
+                                        flags=re.DOTALL | re.IGNORECASE)
+                else:
+                    final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
+                                        original_html,
+                                        flags=re.DOTALL | re.IGNORECASE)
 
-        with open(html_file_path, "w", encoding="utf-8") as html_file:
-            html_file.write(final_html)
+                with open(html_file_path, "w", encoding="utf-8") as html_file:
+                    html_file.write(final_html)
 

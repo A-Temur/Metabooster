@@ -29,14 +29,28 @@
 ## Supported Files and Tags
 
 | File Type         | Supported Extensions | Supported Metadata Tags                                                                                                   |
-|-------------------|----------------------|---------------------------------------------------------------------------------------------------------------------------|
+|-------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------|
 | **Images**        | `.png`, `.jpg`, `.jpeg` | `Author`, `Artist`, `Title`, `Description`, `Copyright`, `Keywords`                                                       |
-| **Images (HEIC)** | `.heic`              | `Artist`, `Title`, `ImageDescription`, `Copyright`                                                                        |
-| **Videos**        | `.mp4`, `.mov`,      | `Title`, `Artist`, `Copyright`, `Description`, `Keywords`                                                                 |
-| **Videos (GIF)**  | `.gif`               | `Title`, `Author`, `Comment`, `Rights` (copyright), `Subject` (keywords), `Description`, `Creator`                        |
-| **HTML**          | `.html`              | (added as comment on top of the file) `Author`, `Description`, `Copyright`, `Keywords`                                    |
-| **CSS**           | `.css`               | same as html                                                                                                              |
-| **Directories**   |                      | Saved in `.metadata.yaml` as key-value pairs: `Title`, `Author`, `Copyright`, `Description`, `Keywords`, `Created` (date) |
+| **Images (HEIC)** | `.heic`            | `Artist`, `Title`, `ImageDescription`, `Copyright`                                                                        |
+| **Videos**        | `.mp4`    | `Title`, `Artist`, `Copyright`, `Description`, `Keywords`                                                                 |
+| **Videos (GIF)**  | `.gif`             | `Title`, `Author`, `Comment`, `Rights` (copyright), `Subject` (keywords), `Description`, `Creator`                        |
+| **HTML**          | `.html`            | (added as comment on top of the file) `Author`, `Description`, `Copyright`, `Keywords`                                    |
+| **CSS**           | `.css`             | same as html                                                                                                              |
+| **Directories**   |                    | Saved in `.metadata.yaml` as key-value pairs: `Title`, `Author`, `Copyright`, `Description`, `Keywords`, `Created` (date) |
+
+---
+
+---
+## Displaying the Metadata: Windows 11 Default Properties Menu
+> Some Metadata Tags aren't shown in the default Windows 11 File Properties Menu (even when the Tags are in the file).
+
+| Extension         | Supported Metadata Tags                                          | Matches with injection?                                                                                                   |
+|-------------------|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `.png`      | N/A                                                              | False                                                                                                                     |
+| `.heic`  | `Subject`, `Title`, `Author`, `Copyright`                        | True                                                                                                                      |
+| `.jpg`      | `Subject`, `Title`, `Author`, `Copyright`,  `Markings(Keywords)` | missing `Artist`                                                                                                          |
+| `.mp4` | `Title`, `Artist`                                                | missing           `Copyright`, `Description`, `Keywords`                                                                  |
+| `.gif`        | N/A                                                              | False                                                                                                                     |
 
 ---
 
