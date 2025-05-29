@@ -4,6 +4,19 @@
 
 ---
 
+<!-- TOC -->
+* [Metabooster](#metabooster)
+  * [Features](#features)
+  * [Supported Files and Tags](#supported-files-and-tags)
+  * [Displaying the Metadata: `Windows 11` Default Properties Menu and `KDE Plasma (Dolphin)` (Tested on Fedora)](#displaying-the-metadata-windows-11-default-properties-menu-and-kde-plasma-dolphin-tested-on-fedora)
+  * [Displaying the Metadata: jExifToolGUI](#displaying-the-metadata-jexiftoolgui)
+  * [Usage](#usage)
+  * [Requirements](#requirements)
+  * [Notes](#notes)
+<!-- TOC -->
+
+---
+
 ## Features
 
 * **Metadata Injection**
@@ -26,6 +39,7 @@
   * All operations are performed on the copied directory.
 
 ---
+
 ## Supported Files and Tags
 
 | File Type         | Supported Extensions | Supported Metadata Tags                                                                                                   |
@@ -40,17 +54,28 @@
 
 ---
 
----
-## Displaying the Metadata: Windows 11 Default Properties Menu
-> Some Metadata Tags aren't shown in the default Windows 11 File Properties Menu (even when the Tags are in the file).
+## Displaying the Metadata: `Windows 11` Default Properties Menu and `KDE Plasma (Dolphin)` (Tested on Fedora)
+> Some Metadata Tags aren't shown in the default File Properties Menu (even when the Tags are in the file).
 
-| Extension         | Supported Metadata Tags                                          | Matches with injection?                                                                                                   |
-|-------------------|------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| `.png`      | N/A                                                              | False                                                                                                                     |
-| `.heic`  | `Subject`, `Title`, `Author`, `Copyright`                        | True                                                                                                                      |
-| `.jpg`      | `Subject`, `Title`, `Author`, `Copyright`,  `Markings(Keywords)` | missing `Artist`                                                                                                          |
-| `.mp4` | `Title`, `Artist`                                                | missing           `Copyright`, `Description`, `Keywords`                                                                  |
-| `.gif`        | N/A                                                              | False                                                                                                                     |
+| Extension | Windows 11 Displayed Tag                              | Missing on Windows 11                  | KDE Plasma Displayed Tags            | Missing on KDE Plasma               | Common Missing Tags           |
+| --------- | ----------------------------------------------------- | -------------------------------------- | ------------------------------------ | ----------------------------------- | ----------------------------- |
+| `.png`    | N/A                                                   | ALL                                    | `Artist`, `Description`, `Copyright` | `Author`, `Title`, `Keywords`       | `Author`, `Title`, `Keywords` |
+| `.heic`   | ALL                                                   | –                                      | ALL                                  | –                                   | –                             |
+| `.jpg`    | `Subject`, `Title`, `Author`, `Copyright`, `Markings` | `Artist`                               | `Artist`, `Copyright`, `Description` | `Author`, `Title`, `Keywords`       | –                             |
+| `.mp4`    | `Title`, `Artist`                                     | `Copyright`, `Description`, `Keywords` | `Title`, `Copyright`                 | `Artist`, `Description`, `Keywords` | `Description`, `Keywords`     |
+| `.gif`    | N/A                                                   | –                                      | N/A                                  | –                                   | –                             |
+
+---
+
+## Displaying the Metadata: jExifToolGUI
+
+| Extension         | Displayed Metadata Tags                                                                                                | Matches with injection? |
+|-------------------|------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| `.png`      | `XP Author`, `Artist`, `XP Title`, `Description`, `Copyright`, `XP Keywords`                                           | True                    |
+| `.heic`  | `Artist`, `(XMP) Title`, `ImageDescription`, `Copyright`                                                               | True                    |
+| `.jpg`      | `XP Author`, `Artist`, `XP Title`, `Description`, `Copyright`, `XP Keywords`                                           | True                    |
+| `.mp4` | (Quicktime): `Title`, `Artist`, `Copyright`, `Description`, (User Data Key) `Keywords`                                 | True                    |
+| `.gif`        | (XMP) `Title`, (XMP) `Author`, (File) `Comment`, (XMP) `Rights`, (XMP) `Subject`, (XMP) `Description`, (XMP) `Creator` | True                    |
 
 ---
 
