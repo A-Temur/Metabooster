@@ -272,6 +272,9 @@ if __name__ == "__main__":
         if final_dir_name:
             original_dir_name = basename(directory)
 
+            while final_dir_name == original_dir_name:
+                final_dir_name = enterbox("new directory name must be unique")
+
             final_dir = directory.replace(original_dir_name, final_dir_name)
 
             copytree(directory, final_dir)
