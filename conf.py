@@ -7,7 +7,7 @@ directory_title_prefix = "OG-Brain.com directory "
 default_directory_description = "Directory metadata file"
 
 # leave string empty, if there is no need to insert jsonld into html
-add_metadata_json_to_html_file = ""
+add_metadata_json_to_html_file = "index.html"
 
 default_name_jsonld_file = "media_jsonld.json"
 
