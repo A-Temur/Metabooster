@@ -2,6 +2,7 @@
 Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 """
 import datetime
+import sys
 
 from PIL import Image
 from bs4 import BeautifulSoup
@@ -264,7 +265,7 @@ if __name__ == "__main__":
     html_brackets = ("<!--", "-->")
     css_brackets = ("/*", "*/")
 
-    directory = diropenbox("Enter the parent directory: ")
+    directory = sys.argv[1]
 
     if directory:
         final_dir_name = enterbox("Enter destination directory name")
@@ -396,3 +397,4 @@ if __name__ == "__main__":
                 with open(html_file_path, "w", encoding="utf-8") as html_file:
                     html_file.write(final_html)
 
+    input("Metabooster finished, Press Enter to exit...")
