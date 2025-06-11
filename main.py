@@ -4,6 +4,7 @@ Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 import datetime
 import sys
 
+import easygui
 from PIL import Image
 from bs4 import BeautifulSoup
 from easygui import diropenbox, enterbox
@@ -16,6 +17,7 @@ import yaml
 import json
 import re
 import exiftool
+import platform
 from conf import *
 
 
@@ -189,6 +191,7 @@ if __name__ == "__main__":
     # exif_tag_map = {TAGS[key]: key for key in TAGS if isinstance(key, int)}
     default_date = datetime.datetime.now().isoformat()
 
+    is_windows = platform.system() == "Windows"
 
     # for images
     metadata_img = {
@@ -265,7 +268,10 @@ if __name__ == "__main__":
     html_brackets = ("<!--", "-->")
     css_brackets = ("/*", "*/")
 
-    directory = sys.argv[1]
+    if is_windows:
+        directory = sys.argv[1]
+    else:
+        directory = easygui.diropenbox("select directory")
 
     if directory:
         final_dir_name = enterbox("Enter destination directory name")
@@ -367,37 +373,41 @@ if __name__ == "__main__":
 
             if bool(add_metadata_json_to_html_file):
 
-                # add metadata json to html
-                html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
+                try:
+                    # add metadata json to html
+                    html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
 
-                with open(html_file_path, "r", encoding="utf-8") as html_reader:
-                    original_html = html_reader.read()
+                    with open(html_file_path, "r", encoding="utf-8") as html_reader:
+                        original_html = html_reader.read()
 
-                prettified_html = BeautifulSoup(original_html, "html.parser")
+                    prettified_html = BeautifulSoup(original_html, "html.parser")
 
-                script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
-                script_element_exists_in_original = True
-                if not script_element:
-                    script_element_exists_in_original = False
-                    new_script_element = prettified_html.new_tag("script", type="application/ld+json")
-                    new_script_element.string = json.dumps(json_ld, indent=4)
-                    prettified_html.find("head").append(new_script_element)
-                else:
-                    script_element.string = json.dumps(json_ld, indent=4)
+                    script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
+                    script_element_exists_in_original = True
+                    if not script_element:
+                        script_element_exists_in_original = False
+                        new_script_element = prettified_html.new_tag("script", type="application/ld+json")
+                        new_script_element.string = json.dumps(json_ld, indent=4)
+                        prettified_html.find("head").append(new_script_element)
+                    else:
+                        script_element.string = json.dumps(json_ld, indent=4)
 
-                prettified_html = prettified_html.prettify()
-                pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
-                                               re.DOTALL | re.IGNORECASE).group()
-                if not script_element_exists_in_original:
-                    final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
-                                        original_html,
-                                        flags=re.DOTALL | re.IGNORECASE)
-                else:
-                    final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
-                                        original_html,
-                                        flags=re.DOTALL | re.IGNORECASE)
+                    prettified_html = prettified_html.prettify()
+                    pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
+                                                   re.DOTALL | re.IGNORECASE).group()
+                    if not script_element_exists_in_original:
+                        final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
+                                            original_html,
+                                            flags=re.DOTALL | re.IGNORECASE)
+                    else:
+                        final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
+                                            original_html,
+                                            flags=re.DOTALL | re.IGNORECASE)
 
-                with open(html_file_path, "w", encoding="utf-8") as html_file:
-                    html_file.write(final_html)
+                    with open(html_file_path, "w", encoding="utf-8") as html_file:
+                        html_file.write(final_html)
+
+                except FileNotFoundError:
+                    print(f"couldn't find {html_file_path}, skipping auto insert of jsonld file")
 
     input("Metabooster finished, Press Enter to exit...")
