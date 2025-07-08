@@ -19,6 +19,30 @@ import re
 import exiftool
 import platform
 from conf import *
+from pypdf import PdfReader, PdfWriter
+
+# TODO
+# add jsonld support for pdf
+# add Context Menu support for KDE Plasma
+
+
+def add_metadata_to_pdf(file_path_, metadata_, file_name_):
+    # Read the PDF
+    reader = PdfReader(file_path_)
+    writer = PdfWriter()
+
+    metadata_['/Title'] += file_name_
+
+    # Copy all pages to writer
+    for page in reader.pages:
+        writer.add_page(page)
+
+    # Add/modify metadata
+    writer.add_metadata(metadata_)
+
+    # Save the modified PDF
+    with open(file_path_, "wb") as output_file:
+        writer.write(output_file)
 
 
 def check_and_write_comment(search_str_, file_writer_, original_content_, new_content_, css=True):
@@ -264,6 +288,57 @@ if __name__ == "__main__":
         "Copyright": copyright_,
         "ImageDescription": default_media_description,
     }
+    
+    # for pdf
+    metadata_pdf = {
+        '/Title': media_title_prefix,
+        '/Author': autor,
+        '/Subject': default_media_description,
+        '/Creator': autor,
+        '/Producer': autor,
+        '/Keywords': ", ".join(keywords),
+        '/Copyright': copyright_,
+        '/Rights': copyright_
+    }
+
+    # for future implementation
+    # metadata_jsonld_pdf =  {
+    #     "@type": "DigitalDocument",
+    #     # Good @type options for PDFs:
+    #     #
+    #     # DigitalDocument - Most general for any digital document
+    #     # Article - If it's an article or blog post in PDF form
+    #     # Report - For reports, whitepapers, etc.
+    #     # Book - For book-length PDFs
+    #     # ScholarlyArticle - For academic papers
+    #     # Dataset - If the PDF contains data
+    #     # Manual - For instruction manuals or guides
+    #     "@id": "#pdfFile",
+    #     "contentUrl": "https://www.og-brain.com/myPDF.pdf",
+    #     "name": "OG-Brain.com pdf file",
+    #     "encodingFormat": "application/pdf",
+    #     "author": {
+    #     "@type": "Person",
+    #     "name": "Abdullah Temur - OG-Brain.com"
+    #     },
+    #     "datePublished": "2024-01-15",
+    #     "description": "Detailed PDF document from OG-Brain.com",
+    #     "keywords": ["brain", "research", "pdf"]
+    #     # Additional useful properties
+    #     #     {
+    #     #   "@type": "DigitalDocument",
+    #     #   "@id": "#pdfFile",
+    #     #   "contentUrl": "https://www.og-brain.com/myPDF.pdf",
+    #     #   "name": "OG-Brain.com pdf file",
+    #     #   "encodingFormat": "application/pdf",
+    #     #   "fileSize": "2MB",
+    #     #   "numberOfPages": 25,
+    #     #   "inLanguage": "en",
+    #     #   "dateCreated": "2024-01-10",
+    #     #   "dateModified": "2024-01-15"
+    #     # }
+    # }
+
 
     html_brackets = ("<!--", "-->")
     css_brackets = ("/*", "*/")
@@ -361,6 +436,11 @@ if __name__ == "__main__":
                         if css_comment not in original_content:
                             with open(file_path, "w", encoding="utf-8") as css_file:
                                 check_and_write_comment("Copyright:", css_file, original_content, css_comment, True)
+
+                    elif file.lower().endswith(".pdf"):
+                        metadata_pdf_cpy = metadata_pdf.copy()
+
+                        add_metadata_to_pdf(file_path, metadata_pdf_cpy, file_name)
 
                     else:
                         print(f"Skipping unsupported file: {file_path}")
