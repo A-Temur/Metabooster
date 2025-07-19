@@ -18,7 +18,7 @@ import json
 import re
 import exiftool
 import platform
-from conf import *
+from schema import *
 from pypdf import PdfReader, PdfWriter
 
 # TODO
