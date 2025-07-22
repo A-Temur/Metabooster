@@ -1,6 +1,6 @@
-# Metabooster
+# Metabooster - Alpha
 
-**Metabooster** is a Python script that automatically adds metadata to supported files within a specified directory. It
+**Metabooster** is a Python tool that automatically adds metadata to supported files within a specified directory. It
 is designed to facilitate consistent metadata improving cross-referencing on the internet.
 
 ---
@@ -67,7 +67,7 @@ is designed to facilitate consistent metadata improving cross-referencing on the
 | `.jpg`    | `Subject`, `Title`, `Author`, `Copyright`, `Markings` | `Artist`                               | `Artist`, `Copyright`, `Description`                                             | `Author`, `Title`, `Keywords`       | –                             |
 | `.mp4`    | `Title`, `Artist`                                     | `Copyright`, `Description`, `Keywords` | `Title`, `Copyright`                                                             | `Artist`, `Description`, `Keywords` | `Description`, `Keywords`     |
 | `.gif`    | N/A                                                   | –                                      | N/A                                                                              | –                                   | –                             |
-| `.pdf`    | Not yet tested                                        | –                                      | `Title`, `Author`, `Document` (Creator/Producer/Author), `Subject` (Description) | `Keywords`, `Copyright`             | –                             |
+| `.pdf`    | N/A                                                   | ALL                                    | `Title`, `Author`, `Document` (Creator/Producer/Author), `Subject` (Description) | `Keywords`, `Copyright`             | –                             |
 
 ---
 
@@ -91,8 +91,7 @@ is designed to facilitate consistent metadata improving cross-referencing on the
    ```bash
    git clone https://github.com/A-Temur/Metabooster.git
    ```
-2. Edit `main.py` and define your metadata strings accordingly:
-    * change line 185 to 223 with your metadata.
+2. Edit `conf.py` and define your metadata strings accordingly:
 3. Run the script.
 4. Select the source directory via the EasyGUI file picker.
 5. Provide a name for the output directory. The script will create a copy with this name and apply all changes there.

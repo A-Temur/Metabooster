@@ -31,6 +31,11 @@ def add_metadata_to_pdf(file_path_, metadata_, file_name_):
     reader = PdfReader(file_path_)
     writer = PdfWriter()
 
+    file_name_extended = basename(file_path_)
+
+    if file_name_extended in custom_descriptions.keys():
+        metadata_["/Subject"] = custom_descriptions[file_name_extended]
+
     metadata_['/Title'] += file_name_
 
     # Copy all pages to writer
