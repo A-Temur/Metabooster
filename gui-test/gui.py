@@ -2,15 +2,29 @@
 Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 """
 
+import importlib
+import json
 import os
 import webbrowser
 from tkinter import filedialog
 
 import customtkinter
-import json
-import importlib
-
 from PIL import Image
+
+
+def center_window(window, width, height):
+    # Get screen dimensions
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+
+    # Calculate center position
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+
+    # Set window geometry
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
+
 
 
 class MainWindow(customtkinter.CTk):
@@ -22,7 +36,8 @@ class MainWindow(customtkinter.CTk):
 
         self.title("MetaBooster")
         # Increased height to make space for the logo
-        self.geometry("800x600")
+        # self.geometry("1000x670")
+        center_window(self, 1000, 670)
 
         # list of supported media files with custom descriptions
         self.supported_files = [".jpg", ".jpeg", ".png", ".gif", ".mp4", ".heic", ".pdf"]
@@ -32,6 +47,8 @@ class MainWindow(customtkinter.CTk):
         # used for determining whether the target dir has changed
         self.last_target_dir = ""
 
+        # used to store a list of all string inputs for convenient access
+        self.str_inputs = []
 
         customtkinter.set_appearance_mode("Dark")
         customtkinter.set_default_color_theme("dark-blue")
@@ -85,16 +102,15 @@ class MainWindow(customtkinter.CTk):
         except FileNotFoundError:
             # Fallback if logo.png is not found
             logo_label = customtkinter.CTkLabel(self, text="My Application", font=("Arial", 24))
-            logo_label.grid(row=0, column=1, olumnspan=3, pady=(20, 10))
-
+            logo_label.grid(row=0, column=1, columnspan=3, pady=(20, 10))
 
         # 3. Select your Projects directory:
         self.dir1_label = customtkinter.CTkLabel(self, text="Select the Target directory:")
         self.dir1_label.grid(row=1, column=0, padx=10, pady=(10, 5), sticky="w")
-        # ... (rest of the widgets)
         self.target_dir = customtkinter.CTkEntry(self, placeholder_text="Select directory...")
         self.target_dir.grid(row=1, column=1, padx=10, pady=(10, 5), sticky="ew")
-        self.dir1_button = customtkinter.CTkButton(self, text="Browse...", command=lambda: self.select_dir(self.target_dir))
+        self.dir1_button = customtkinter.CTkButton(self, text="Browse...",
+                                                   command=lambda: self.select_dir(self.target_dir))
         self.dir1_button.grid(row=1, column=2, padx=10, pady=(10, 5))
 
         # 4. Select output directory location
@@ -103,7 +119,8 @@ class MainWindow(customtkinter.CTk):
         self.out_dir = customtkinter.CTkEntry(self,
                                               placeholder_text="Select the location of the resulting PyPortable output...")
         self.out_dir.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
-        self.dir2_button = customtkinter.CTkButton(self, text="Browse...", command=lambda: self.select_dir(self.out_dir))
+        self.dir2_button = customtkinter.CTkButton(self, text="Browse...",
+                                                   command=lambda: self.select_dir(self.out_dir))
         self.dir2_button.grid(row=2, column=2, padx=10, pady=5)
 
         # String Inputs
@@ -112,55 +129,87 @@ class MainWindow(customtkinter.CTk):
         self.author_label.grid(row=3, column=0, padx=10, pady=(20, 5), sticky="w")
         self.author_entry = customtkinter.CTkEntry(self, placeholder_text="Enter author name")
         self.author_entry.grid(row=3, column=1, columnspan=2, padx=10, pady=(20, 5), sticky="ew")
+        self.str_inputs.append(self.author_entry)
 
         # Copyright
         self.copyright_label = customtkinter.CTkLabel(self, text="Copyright:")
         self.copyright_label.grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.copyright_entry = customtkinter.CTkEntry(self, placeholder_text="e.g. Copyright 2025 OG-Brain.com, Abdullah Temur. All rights reserved.")
+        self.copyright_entry = customtkinter.CTkEntry(self,
+                                                      placeholder_text="e.g. Copyright 2025 OG-Brain.com, Abdullah Temur. All rights reserved.")
         self.copyright_entry.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.copyright_entry)
 
         # Media Description
         self.media_desc_label = customtkinter.CTkLabel(self, text="Default Media Description:")
         self.media_desc_label.grid(row=5, column=0, padx=10, pady=5, sticky="w")
         self.media_desc_entry = customtkinter.CTkEntry(self, placeholder_text="e.g. Media for OG-Brain.com")
         self.media_desc_entry.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.media_desc_entry)
+
+        # Keywords
+        self.keywords_label = customtkinter.CTkLabel(self, text="Keywords (Comma separated):")
+        self.keywords_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
+        self.keywords_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: OG-Brain, Abdullah Temur, ")
+        self.keywords_entry.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.keywords_entry)
 
         # Media Title Prefix
         self.title_prefix_label = customtkinter.CTkLabel(self, text="Media Title Prefix:")
-        self.title_prefix_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
+        self.title_prefix_label.grid(row=7, column=0, padx=10, pady=5, sticky="w")
         self.title_prefix_entry = customtkinter.CTkEntry(self, placeholder_text="Enter media title prefix")
-        self.title_prefix_entry.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.title_prefix_entry.grid(row=7, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.title_prefix_entry)
 
         # Directory Title Prefix
         self.dir_prefix_label = customtkinter.CTkLabel(self, text="Directory Title Prefix:")
-        self.dir_prefix_label.grid(row=7, column=0, padx=10, pady=5, sticky="w")
-        self.dir_prefix_entry = customtkinter.CTkEntry(self, placeholder_text="Enter directory title prefix")
-        self.dir_prefix_entry.grid(row=7, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.dir_prefix_label.grid(row=8, column=0, padx=10, pady=5, sticky="w")
+        self.dir_prefix_entry = customtkinter.CTkEntry(self, placeholder_text="e.g. OG-Brain.com directory ")
+        self.dir_prefix_entry.grid(row=8, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.dir_prefix_entry)
+
+        # Default directory metadata file description
+        self.dir_file_desc_label = customtkinter.CTkLabel(self, text="Default directory file description:")
+        self.dir_file_desc_label.grid(row=9, column=0, padx=10, pady=5, sticky="w")
+        self.dir_file_desc_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: Directory metadata file")
+        self.dir_file_desc_entry.grid(row=9, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.dir_file_desc_entry)
 
         # HTML File for JSON-LD
         self.jsonld_html_label = customtkinter.CTkLabel(self, text="HTML File for JSON-LD:")
-        self.jsonld_html_label.grid(row=8, column=0, padx=10, pady=5, sticky="w")
+        self.jsonld_html_label.grid(row=10, column=0, padx=10, pady=5, sticky="w")
         self.jsonld_html_entry = customtkinter.CTkEntry(self,
-                                                        placeholder_text="Enter HTML filename (leave empty if not needed)")
-        self.jsonld_html_entry.grid(row=8, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+                                                        placeholder_text="Enter your HTML filename (leave empty if not needed), e.g.: index.html")
+        self.jsonld_html_entry.grid(row=10, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.jsonld_html_entry)
+
+        # Default name jsonld file
+        self.jsonld_filename_label = customtkinter.CTkLabel(self, text="Default name of jsonld file:")
+        self.jsonld_filename_label.grid(row=11, column=0, padx=10, pady=5, sticky="w")
+        self.jsonld_filename_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: media_jsonld.json")
+        self.jsonld_filename_entry.grid(row=11, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.jsonld_filename_entry)
 
         # Website URL
         self.website_label = customtkinter.CTkLabel(self, text="Website URL:")
-        self.website_label.grid(row=9, column=0, padx=10, pady=5, sticky="w")
-        self.website_entry = customtkinter.CTkEntry(self, placeholder_text="Enter website URL")
-        self.website_entry.grid(row=9, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
-        
+        self.website_label.grid(row=12, column=0, padx=10, pady=5, sticky="w")
+        self.website_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: https://www.og-brain.com")
+        self.website_entry.grid(row=12, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.str_inputs.append(self.website_entry)
+
         # JSON-LD Filename
         self.jsonld_edit_button = customtkinter.CTkButton(self, text="Edit JSON-LD", command=self.open_jsonld_editor)
-        self.jsonld_edit_button.grid(row=10, column=2, padx=10, pady=5, sticky="e")
+        self.jsonld_edit_button.grid(row=13, column=2, padx=10, pady=5, sticky="e")
 
         # custom descriptions
-        self.custom_desc_button = customtkinter.CTkButton(self, text="Create Custom Descriptions", command=self.create_custom_descriptions)
-        self.custom_desc_button.grid(row=10, column=0, padx=10, pady=5, sticky="w")
+        self.custom_desc_button = customtkinter.CTkButton(self, text="Create Custom Descriptions",
+                                                          command=self.create_custom_descriptions)
+        self.custom_desc_button.grid(row=13, column=0, padx=10, pady=5, sticky="w")
 
         # Submit Button
         self.submit_button = customtkinter.CTkButton(self, text="Run Metabooster", command=self.submit)
-        self.submit_button.grid(row=10, column=1, padx=10, pady=5, sticky="e")
+        self.submit_button.grid(row=13, column=1, padx=10, pady=5, sticky="e")
+
+        self.load_conf()
 
     def select_dir(self, target_entry_widget):
         path = filedialog.askdirectory()
@@ -168,15 +217,87 @@ class MainWindow(customtkinter.CTk):
             target_entry_widget.delete(0, "end")
             target_entry_widget.insert(0, path)
 
-    def submit(self):
-        # write all entrys into custom conf json
-        pass
+    def load_conf(self):
+        popup_progressbar = PopupProgressBar(self, "Loading Configuration", "Loading files...")
 
+        with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
+            custom_conf = json.load(f)
+            popup_progressbar.progress_bar.update()
+
+            self.author_entry.delete(0, "end")
+            self.author_entry.insert(0, custom_conf["autor"])
+            popup_progressbar.progress_bar.update()
+
+            self.copyright_entry.delete(0, "end")
+            self.copyright_entry.insert(0, custom_conf["copyright_"])
+            popup_progressbar.progress_bar.update()
+
+            self.media_desc_entry.delete(0, "end")
+            self.media_desc_entry.insert(0, custom_conf["default_media_description"])
+            popup_progressbar.progress_bar.update()
+
+            self.keywords_entry.delete(0, "end")
+            self.keywords_entry.insert(0, custom_conf["keywords"])
+            popup_progressbar.progress_bar.update()
+
+            self.title_prefix_entry.delete(0, "end")
+            self.title_prefix_entry.insert(0, custom_conf["media_title_prefix"])
+            popup_progressbar.progress_bar.update()
+
+            self.dir_prefix_entry.delete(0, "end")
+            self.dir_prefix_entry.insert(0, custom_conf["directory_title_prefix"])
+            popup_progressbar.progress_bar.update()
+
+            self.dir_file_desc_entry.delete(0, "end")
+            self.dir_file_desc_entry.insert(0, custom_conf["default_directory_description"])
+            popup_progressbar.progress_bar.update()
+
+            self.jsonld_html_entry.delete(0, "end")
+            self.jsonld_html_entry.insert(0, custom_conf["add_metadata_json_to_html_file"])
+            popup_progressbar.progress_bar.update()
+
+            self.jsonld_filename_entry.delete(0, "end")
+            self.jsonld_filename_entry.insert(0, custom_conf["default_name_jsonld_file"])
+            popup_progressbar.progress_bar.update()
+
+            self.website_entry.delete(0, "end")
+            self.website_entry.insert(0, custom_conf["website"])
+            popup_progressbar.progress_bar.update()
+
+        self.after(3000, popup_progressbar.destroy)
+
+    def submit(self):
+        popup = PopupProgressBar(self, "Loading", "Metaboosting your data...")
+        # write all widget entrys into custom conf json
+        with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
+            popup.progress_bar.update()
+            custom_conf = json.load(f)
+
+        popup.progress_bar.update()
+        custom_conf["autor"] = self.author_entry.get()
+        custom_conf["copyright_"] = self.copyright_entry.get()
+        custom_conf["default_media_description"] = self.media_desc_entry.get()
+        custom_conf["keywords"] = self.keywords_entry.get()
+        custom_conf["media_title_prefix"] = self.title_prefix_entry.get()
+        custom_conf["directory_title_prefix"] = self.dir_prefix_entry.get()
+        custom_conf["default_directory_description"] = self.dir_file_desc_entry.get()
+        custom_conf["add_metadata_json_to_html_file"] = self.jsonld_html_entry.get()
+        custom_conf["default_name_jsonld_file"] = self.jsonld_filename_entry.get()
+        custom_conf["website"] = self.website_entry.get()
+
+        popup.progress_bar.update()
+        with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
+            popup.progress_bar.update()
+            json.dump(custom_conf, f, indent=4)
+
+        self.after(1000, popup.destroy)
+
+        # entry point for backend.
 
     def create_popup_dialog(self, title_, text_):
         dialog_ = customtkinter.CTkToplevel(self)
         dialog_.title(title_)
-        dialog_.geometry("300x100")
+        center_window(dialog_, 300, 100)
 
         dialog_label_ = customtkinter.CTkLabel(dialog_, text=text_)
         dialog_label_.pack(pady=20)
@@ -194,20 +315,20 @@ class MainWindow(customtkinter.CTk):
             self.create_popup_dialog("Error", "You must select a target directory first!")
             return
 
-
         def fill_frame():
             if len(self.filtered_files) >= 1:
                 for supported_file in self.filtered_files:
                     scrollable_frame_label = customtkinter.CTkLabel(scrollable_frame,
                                                                     text=f"{os.path.basename(supported_file)}")
                     scrollable_frame_label.pack(padx=10, pady=5, anchor="w")
-                    scrollable_frame_input = customtkinter.CTkEntry(scrollable_frame, placeholder_text="")
-                    scrollable_frame_input.pack(padx=10, pady=5, anchor="w")
+                    scrollable_frame_input = customtkinter.CTkEntry(scrollable_frame, placeholder_text="Leave empty, if there's no need")
+                    scrollable_frame_input.pack(padx=10, pady=5, anchor="w", fill="x")
                     scrollable_frame.labels.append((scrollable_frame_label, scrollable_frame_input))
 
                 progress_bar.stop()
                 progress_window.grab_release()
                 progress_window.destroy()
+                new_window.grab_set()
 
             else:
                 progress_bar.stop()
@@ -228,7 +349,6 @@ class MainWindow(customtkinter.CTk):
                     if "." + file.split('.')[-1] in self.supported_files:
                         self.filtered_files.append(os.path.join(root, file))
 
-
         def save_custom_descriptions():
             lis_item_: tuple[customtkinter.CTkLabel, customtkinter.CTkEntry]
 
@@ -248,9 +368,7 @@ class MainWindow(customtkinter.CTk):
                 with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
                     json.dump(custom_conf, f, indent=4)
 
-
-
-
+            new_window.destroy()
 
         target_dir_changed = True
 
@@ -258,40 +376,48 @@ class MainWindow(customtkinter.CTk):
         if self.target_dir.get() == self.last_target_dir:
             target_dir_changed = False
 
-
         # create new window (scrollable)
         new_window = customtkinter.CTkToplevel(self)
         new_window.title("Create Custom Descriptions")
-        new_window.geometry("800x600")
-        new_window.transient(self)
+        center_window(new_window, 430, 566)
+        # new_window.transient(self)
         new_window.grab_set()
 
         # add widgets
         scrollable_frame = customtkinter.CTkScrollableFrame(new_window)
-        scrollable_frame.pack(padx=20, pady=20, fill="both", expand=True)
+        # scrollable_frame.pack(padx=20, pady=20, fill="both", expand=True)
+        new_window.grid_rowconfigure(0, weight=1)
+        new_window.grid_columnconfigure(0, weight=1)
+        new_window.grid_columnconfigure(1, weight=1)
+        scrollable_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew", columnspan=2)
+
         scrollable_frame.labels = []
 
         save_button = customtkinter.CTkButton(new_window, text="Save", command=save_custom_descriptions)
-        save_button.pack(pady=10)
+        save_button.grid(row=1, column=0, pady=20)
 
         cancel_button = customtkinter.CTkButton(new_window, text="Cancel", command=new_window.destroy)
-        cancel_button.pack(pady=10)
+        cancel_button.grid(row=1, column=1, pady=20)
 
         # create progress bar window
 
         progress_window = customtkinter.CTkToplevel(self)
         progress_window.title("...")
-        progress_window.geometry("500x100")
+        # progress_window.geometry("500x100")
+        center_window(progress_window, 500,100)
         progress_bar = customtkinter.CTkProgressBar(progress_window, mode="indeterminate", width=300)
         progress_bar.pack(pady=10)
         progress_label = customtkinter.CTkLabel(progress_window, text="Loading files...", font=("Arial", 12))
         progress_label.pack(pady=10)
         progress_bar.start()
 
+        new_window.grab_release()
+
         progress_window.transient(self)
         progress_window.grab_set()
 
-        new_window.grab_release()
+
+
 
         if target_dir_changed:
             self.filtered_files = []
@@ -304,7 +430,6 @@ class MainWindow(customtkinter.CTk):
         else:
             progress_label.configure(text="filling frame...")
             self.after(0, fill_frame)
-
 
     def open_jsonld_editor(self):
         def get_conf(key_: str) -> str:
@@ -336,7 +461,6 @@ class MainWindow(customtkinter.CTk):
             with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
                 json.dump(custom_conf, f, indent=4)
 
-
         def hide_stop_progress_bar(reset_status_=False):
             progress_bar.stop()
             progress_bar.pack_forget()
@@ -348,34 +472,8 @@ class MainWindow(customtkinter.CTk):
             progress_bar.start()
             text_status.configure(text=text_status_)
 
+            # Create save button
 
-        editor_window = customtkinter.CTkToplevel(self)
-        editor_window.title("JSON-LD Editor")
-        editor_window.geometry("600x400")
-        editor_window.transient(self)
-        editor_window.grab_set()
-
-        progress_bar = customtkinter.CTkProgressBar(editor_window, mode="indeterminate", width=300)
-        # make invisible by default
-        progress_bar.pack_forget()
-
-        # create text status field
-        text_status = customtkinter.CTkLabel(editor_window, text="Ready", font=("Arial", 12))
-        text_status.pack(pady=10)
-
-        # Create text widget for editing
-        text_widget = customtkinter.CTkTextbox(editor_window)
-        text_widget.pack(expand=True, fill="both", padx=10, pady=10)
-
-        show_start_progress_bar("Retrieving JSON-LD content, please wait...")
-
-        insert_text = get_conf("json_ld")
-
-        text_widget.insert("1.0", insert_text)
-
-        hide_stop_progress_bar(True)
-
-        # Create save button
         def save_changes():
             try:
                 show_start_progress_bar("Saving JSON-LD content, please wait...")
@@ -400,21 +498,95 @@ class MainWindow(customtkinter.CTk):
                 text_status.configure(text=f"Unexpected error {e.__str__()}")
                 hide_stop_progress_bar()
 
-        save_button = customtkinter.CTkButton(editor_window, text="Save", command=save_changes)
-        save_button.pack(pady=10)
-
         def cancel_button_clicked():
             editor_window.destroy()
 
-        cancel_button = customtkinter.CTkButton(editor_window, text="Cancel", command=cancel_button_clicked)
-        cancel_button.pack(pady=10)
-        
-        
+        editor_window = customtkinter.CTkToplevel(self)
+        editor_window.title("JSON-LD Editor")
+        center_window(editor_window, 490, 400)
+        # editor_window.transient(self)
+        editor_window.grab_set()
+
+        editor_window.grid_rowconfigure(0, weight=1)
+        editor_window.grid_columnconfigure(0, weight=1)
+        # editor_window.grid_columnconfigure(1, weight=1)
+
+        # create separate frame to use pack for one frame
+
+        # frame for everything except save and cancel buttons
+        main_frame = customtkinter.CTkFrame(editor_window)
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew", columnspan=2)
+
+        # frame for save and cancel button
+        save_cancel_frame = customtkinter.CTkFrame(editor_window, fg_color='gray10')
+        save_cancel_frame.grid(row=1, column=0, sticky="ew", columnspan=2)
+        save_cancel_frame.grid_columnconfigure(0, weight=1)
+        save_cancel_frame.grid_columnconfigure(1, weight=1)
+
+        progress_bar = customtkinter.CTkProgressBar(main_frame, mode="indeterminate", width=300)
+        # make invisible by default
+        progress_bar.pack_forget()
+
+        # create text status field
+        text_status = customtkinter.CTkLabel(main_frame, text="Ready", font=("Arial", 12))
+        text_status.pack(pady=10)
+
+        # Create text widget for editing
+        text_widget = customtkinter.CTkTextbox(main_frame)
+        text_widget.pack(expand=True, fill="both", padx=10, pady=10)
+
+        # Save and cancel buttons
+        save_button = customtkinter.CTkButton(save_cancel_frame, text="Save", command=save_changes)
+        save_button.grid(row=0, column=0, pady=20)
+
+        cancel_button = customtkinter.CTkButton(save_cancel_frame, text="Cancel", command=cancel_button_clicked)
+        cancel_button.grid(row=0, column=1, pady=20)
+
+        show_start_progress_bar("Retrieving JSON-LD content, please wait...")
+
+        insert_text = get_conf("json_ld")
+
+        text_widget.insert("1.0", insert_text)
+
+        hide_stop_progress_bar(True)
+
+
+
+
+
     # --- 4. Add a method to open links ---
     def open_link(self, url):
         """Opens the given URL in a new browser tab."""
         webbrowser.open_new_tab(url)
         print(f"Opening {url}...")
+
+
+class PopupProgressBar:
+    def __init__(self, parent:MainWindow, title, text):
+        self.window = customtkinter.CTkToplevel(parent)
+        # remove default title bar
+        self.window.overrideredirect(True)
+        # parent.attributes('-topmost', False)
+
+
+        self.window.title(title)
+        center_window(self.window, 500, 70)
+
+        self.progress_bar = customtkinter.CTkProgressBar(self.window, mode="indeterminate", width=300)
+        self.progress_bar.pack(pady=10)
+        self.progress_label = customtkinter.CTkLabel(self.window, text=text, font=("Arial", 12))
+        self.progress_label.pack()
+
+        self.progress_bar.start()
+        # transient doesn't bring this window to the foreground when using overrideredirect(True)
+        # self.window.transient(parent)
+
+        self.window.focus_force()
+        self.window.grab_set()
+
+    def destroy(self):
+        self.progress_bar.stop()
+        self.window.destroy()
 
 
 if __name__ == '__main__':
