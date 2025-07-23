@@ -11,6 +11,7 @@ from tkinter import filedialog
 import customtkinter
 from PIL import Image
 from PIL.ImageOps import expand
+from tktooltip import ToolTip
 
 
 def center_window(window, width, height):
@@ -27,8 +28,13 @@ def center_window(window, width, height):
 
 
 
-
 class MainWindow(customtkinter.CTk):
+
+    @property
+    def required_conditions_met(self):
+        all_bool = [x.required_condition_met for x in self._required_widgets]
+        return all(all_bool)
+
 
     def __init__(self):
         super().__init__()
@@ -146,14 +152,19 @@ class MainWindow(customtkinter.CTk):
             :param target_widget:
             :return:
             """
-            if not target_widget.already_changed:
+            if not target_widget.required_condition_met:
                 new_value = new_value[0]
                 # check whether the new value isn't only the placeholder text and not empty str
                 if new_value != '' and new_value != target_widget._placeholder_text:
                     target_widget.configure(border_color="#565B5E")
-                    target_widget.already_changed = True
+                    target_widget.required_condition_met = True
+
+            if self.required_conditions_met:
+                self.submit_button.configure(fg_color="green")
+
             return True  # Always allow the input
 
+        self._required_widgets = []
 
         self.dir1_label = customtkinter.CTkLabel(directory_frame, text="Select the Target directory:")
         self.dir1_label.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
@@ -164,8 +175,10 @@ class MainWindow(customtkinter.CTk):
                                                    command=lambda: self.select_dir(self.target_dir))
         self.dir1_button.grid(row=0, column=2, padx=10, pady=(10, 5), sticky="e")
 
-        # used for determining whether border color already changed
-        self.target_dir.already_changed = False
+        self.target_dir.required_condition_met = False
+        self._required_widgets.append(self.target_dir)
+
+        CustomTooltip(self.target_dir, "Select the directory in which your files are")
 
 
         # vcmd = (self.register(validate_input), '%P')
@@ -175,18 +188,20 @@ class MainWindow(customtkinter.CTk):
                                                    '%P'))
 
         # 4. Select output directory location
-        self.dir2_label = customtkinter.CTkLabel(directory_frame, text="Select output directory location:")
+        self.dir2_label = customtkinter.CTkLabel(directory_frame, text="Select output location:")
         self.dir2_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
         self.out_dir = customtkinter.CTkEntry(directory_frame,
-                                              placeholder_text="Select the location of the resulting PyPortable output...",
+                                              placeholder_text="Select the location of the output...",
                                               border_color='green')
         self.out_dir.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
         self.dir2_button = customtkinter.CTkButton(directory_frame, text="Browse...",
-                                                   command=lambda: self.select_dir(self.out_dir))
+                                                   command=lambda: self.select_dir(self.out_dir, False))
         self.dir2_button.grid(row=1, column=2, padx=10, pady=5, sticky="e")
 
-        # used for determining whether border color already changed
-        self.out_dir.already_changed = False
+        self.out_dir.required_condition_met = False
+        self._required_widgets.append(self.out_dir)
+
+        self.create_new_dir = False
 
 
         # vcmd = (self.register(validate_input), '%P')
@@ -194,6 +209,8 @@ class MainWindow(customtkinter.CTk):
                                   validatecommand=(self.register(lambda *args: reset_border_color(args,
                                                                                                   self.out_dir)),
                                                    '%P'))
+
+        CustomTooltip(self.out_dir, "A new directory will be created by default, except when you specifically select an already existing directory")
 
         # String Inputs
         # Author
@@ -212,25 +229,31 @@ class MainWindow(customtkinter.CTk):
         self.str_inputs.append(self.copyright_entry)
 
         # Media Description
-        self.media_desc_label = customtkinter.CTkLabel(fields_frame, text="Default Media Description:")
+        self.media_desc_label = customtkinter.CTkLabel(fields_frame, text="Default Description:")
         self.media_desc_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
         self.media_desc_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g. Media for OG-Brain.com")
         self.media_desc_entry.grid(row=2, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.media_desc_entry)
 
+        CustomTooltip(self.media_desc_entry, "This description will be inserted to all supported files")
+
         # Keywords
         self.keywords_label = customtkinter.CTkLabel(fields_frame, text="Keywords (Comma separated):")
         self.keywords_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
-        self.keywords_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: OG-Brain, Abdullah Temur, ")
+        self.keywords_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: OG-Brain, Abdullah Temur, Bio-inspired AI")
         self.keywords_entry.grid(row=3, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.keywords_entry)
 
         # Media Title Prefix
         self.title_prefix_label = customtkinter.CTkLabel(fields_frame, text="Media Title Prefix:")
         self.title_prefix_label.grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.title_prefix_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="Enter media title prefix")
+        self.title_prefix_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g. Website.com ")
         self.title_prefix_entry.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.title_prefix_entry)
+
+        CustomTooltip(self.title_prefix_entry, "This will be used as the title for your files. "
+                                               "E.g. when your prefix is 'Website.com', "
+                                               "the resulting Title will be: 'Website.com filename'")
 
         # Directory Title Prefix
         self.dir_prefix_label = customtkinter.CTkLabel(fields_frame, text="Directory Title Prefix:")
@@ -239,12 +262,20 @@ class MainWindow(customtkinter.CTk):
         self.dir_prefix_entry.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.dir_prefix_entry)
 
+        CustomTooltip(self.dir_prefix_entry, "Since directories by themselves doesn't support metadata, "
+                                             "Metabooster automatically creates a new json file for each directory."
+                                             "This prefix is used for such json files 'Title'. "
+                                             "E.g. when your prefix is 'Website.com', "
+                                             "the resulting Title will be: 'Website.com directoryname'")
+
         # Default directory metadata file description
         self.dir_file_desc_label = customtkinter.CTkLabel(fields_frame, text="Default directory file description:")
         self.dir_file_desc_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
         self.dir_file_desc_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: Directory metadata file")
         self.dir_file_desc_entry.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.dir_file_desc_entry)
+
+        CustomTooltip(self.dir_file_desc_entry, "Used for directory metadata files")
 
         # HTML File for JSON-LD
         self.jsonld_html_label = customtkinter.CTkLabel(fields_frame, text="HTML File for JSON-LD:")
@@ -284,11 +315,19 @@ class MainWindow(customtkinter.CTk):
 
         self.load_conf()
 
-    def select_dir(self, target_entry_widget):
+    def select_dir(self, target_entry_widget, target_dir_selected=True):
         path = filedialog.askdirectory()
         if path:
             target_entry_widget.delete(0, "end")
             target_entry_widget.insert(0, path)
+
+            if target_dir_selected:
+                original_dir_name = os.path.basename(path)
+                final_dir = path.replace(original_dir_name, f"Metaboosted_{original_dir_name}")
+                self.out_dir.delete(0, "end")
+                self.out_dir.insert(0, final_dir)
+            else:
+                self.create_new_dir = True
 
     def load_conf(self):
         popup_progressbar = PopupProgressBar(self, "Loading Configuration", "Loading files...")
@@ -638,6 +677,13 @@ class PopupProgressBar:
     def destroy(self):
         self.progress_bar.stop()
         self.window.destroy()
+
+
+
+class CustomTooltip(ToolTip):
+    def __init__(self, *args):
+        super().__init__(*args)
+
 
 
 if __name__ == '__main__':
