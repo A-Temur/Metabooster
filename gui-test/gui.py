@@ -111,7 +111,7 @@ class MainWindow(customtkinter.CTk):
         self.target_dir.grid(row=1, column=1, padx=10, pady=(10, 5), sticky="ew")
         self.dir1_button = customtkinter.CTkButton(self, text="Browse...",
                                                    command=lambda: self.select_dir(self.target_dir))
-        self.dir1_button.grid(row=1, column=2, padx=10, pady=(10, 5))
+        self.dir1_button.grid(row=1, column=2, padx=10, pady=(10, 5), sticky="e")
 
         # 4. Select output directory location
         self.dir2_label = customtkinter.CTkLabel(self, text="Select output directory location:")
@@ -121,7 +121,7 @@ class MainWindow(customtkinter.CTk):
         self.out_dir.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
         self.dir2_button = customtkinter.CTkButton(self, text="Browse...",
                                                    command=lambda: self.select_dir(self.out_dir))
-        self.dir2_button.grid(row=2, column=2, padx=10, pady=5)
+        self.dir2_button.grid(row=2, column=2, padx=10, pady=5, sticky="e")
 
         # String Inputs
         # Author
@@ -197,7 +197,7 @@ class MainWindow(customtkinter.CTk):
         self.str_inputs.append(self.website_entry)
 
         # JSON-LD Filename
-        self.jsonld_edit_button = customtkinter.CTkButton(self, text="Edit JSON-LD", command=self.open_jsonld_editor)
+        self.jsonld_edit_button = customtkinter.CTkButton(self, text="Edit JSON-LD HEAD", command=self.open_jsonld_editor)
         self.jsonld_edit_button.grid(row=13, column=2, padx=10, pady=5, sticky="e")
 
         # custom descriptions
@@ -264,7 +264,7 @@ class MainWindow(customtkinter.CTk):
             self.website_entry.insert(0, custom_conf["website"])
             popup_progressbar.progress_bar.update()
 
-        self.after(3000, popup_progressbar.destroy)
+        self.after(1500, popup_progressbar.destroy)
 
     def submit(self):
         popup = PopupProgressBar(self, "Loading", "Metaboosting your data...")
@@ -316,31 +316,13 @@ class MainWindow(customtkinter.CTk):
             return
 
         def fill_frame():
-            if len(self.filtered_files) >= 1:
-                for supported_file in self.filtered_files:
-                    scrollable_frame_label = customtkinter.CTkLabel(scrollable_frame,
-                                                                    text=f"{os.path.basename(supported_file)}")
-                    scrollable_frame_label.pack(padx=10, pady=5, anchor="w")
-                    scrollable_frame_input = customtkinter.CTkEntry(scrollable_frame, placeholder_text="Leave empty, if there's no need")
-                    scrollable_frame_input.pack(padx=10, pady=5, anchor="w", fill="x")
-                    scrollable_frame.labels.append((scrollable_frame_label, scrollable_frame_input))
-
-                progress_bar.stop()
-                progress_window.grab_release()
-                progress_window.destroy()
-                new_window.grab_set()
-
-            else:
-                progress_bar.stop()
-                progress_window.grab_release()
-                # make windows invisible
-                progress_window.attributes("-alpha", 0)
-                new_window.attributes("-alpha", 0)
-
-                self.create_popup_dialog("Error", "No supported files found in target directory")
-                progress_window.destroy()
-                new_window.grab_release()
-                new_window.destroy()
+            for supported_file in self.filtered_files:
+                scrollable_frame_label = customtkinter.CTkLabel(scrollable_frame,
+                                                                text=f"{os.path.basename(supported_file)}")
+                scrollable_frame_label.pack(padx=10, pady=5, anchor="w")
+                scrollable_frame_input = customtkinter.CTkEntry(scrollable_frame, placeholder_text="Leave empty, if there's no need")
+                scrollable_frame_input.pack(padx=10, pady=5, anchor="w", fill="x")
+                scrollable_frame.labels.append((scrollable_frame_label, scrollable_frame_input))
 
         def fill_files_list():
             # create a list of all files inside the target directory (recursive)
@@ -369,6 +351,8 @@ class MainWindow(customtkinter.CTk):
                     json.dump(custom_conf, f, indent=4)
 
             new_window.destroy()
+            popup_ = PopupProgressBar(self, "Save", "Saving custom descriptions...")
+            self.after(1500, popup_.destroy)
 
         target_dir_changed = True
 
@@ -378,10 +362,10 @@ class MainWindow(customtkinter.CTk):
 
         # create new window (scrollable)
         new_window = customtkinter.CTkToplevel(self)
+        # make window invisible by default
+        new_window.attributes("-alpha", 0)
         new_window.title("Create Custom Descriptions")
         center_window(new_window, 430, 566)
-        # new_window.transient(self)
-        new_window.grab_set()
 
         # add widgets
         scrollable_frame = customtkinter.CTkScrollableFrame(new_window)
@@ -399,37 +383,27 @@ class MainWindow(customtkinter.CTk):
         cancel_button = customtkinter.CTkButton(new_window, text="Cancel", command=new_window.destroy)
         cancel_button.grid(row=1, column=1, pady=20)
 
-        # create progress bar window
-
-        progress_window = customtkinter.CTkToplevel(self)
-        progress_window.title("...")
-        # progress_window.geometry("500x100")
-        center_window(progress_window, 500,100)
-        progress_bar = customtkinter.CTkProgressBar(progress_window, mode="indeterminate", width=300)
-        progress_bar.pack(pady=10)
-        progress_label = customtkinter.CTkLabel(progress_window, text="Loading files...", font=("Arial", 12))
-        progress_label.pack(pady=10)
-        progress_bar.start()
-
-        new_window.grab_release()
-
-        progress_window.transient(self)
-        progress_window.grab_set()
-
-
-
+        popup_bar = PopupProgressBar(self, "...", "Loading files ...")
 
         if target_dir_changed:
             self.filtered_files = []
             self.last_target_dir = self.target_dir.get()
-            progress_label.configure(text="iterating over files...")
-            self.after(0, fill_files_list)
+            popup_bar.update("Iterating over files...")
+            fill_files_list()
             # self.after(0, update_progress, "filling frame...")
-            progress_label.configure(text="filling frame...")
-            self.after(0, fill_frame)
+
+        if len(self.filtered_files) >= 1:
+            popup_bar.update("filling frame...")
+            fill_frame()
+            # destroy progress bar
+            popup_bar.destroy()
+            # make window visible
+            new_window.attributes('-alpha', 1)
+            new_window.grab_set()
         else:
-            progress_label.configure(text="filling frame...")
-            self.after(0, fill_frame)
+            popup_bar.destroy()
+            new_window.destroy()
+            self.create_popup_dialog("Error", "No supported files found in target directory")
 
     def open_jsonld_editor(self):
         def get_conf(key_: str) -> str:
@@ -476,7 +450,7 @@ class MainWindow(customtkinter.CTk):
 
         def save_changes():
             try:
-                show_start_progress_bar("Saving JSON-LD content, please wait...")
+                show_start_progress_bar("Saving new JSON-LD Head, please wait...")
                 # Get content from text widget
                 new_json = json.loads(text_widget.get("1.0", "end"))
 
@@ -484,6 +458,8 @@ class MainWindow(customtkinter.CTk):
 
                 hide_stop_progress_bar()
                 editor_window.destroy()
+                popup = PopupProgressBar(self, "..", "Saving new JSON Head...")
+                self.after(1000, popup.destroy)
 
             except json.JSONDecodeError:
                 print("Invalid JSON format")
@@ -502,7 +478,7 @@ class MainWindow(customtkinter.CTk):
             editor_window.destroy()
 
         editor_window = customtkinter.CTkToplevel(self)
-        editor_window.title("JSON-LD Editor")
+        editor_window.title("JSON-LD HEAD Editor")
         center_window(editor_window, 490, 400)
         # editor_window.transient(self)
         editor_window.grab_set()
@@ -551,9 +527,6 @@ class MainWindow(customtkinter.CTk):
         hide_stop_progress_bar(True)
 
 
-
-
-
     # --- 4. Add a method to open links ---
     def open_link(self, url):
         """Opens the given URL in a new browser tab."""
@@ -583,6 +556,11 @@ class PopupProgressBar:
 
         self.window.focus_force()
         self.window.grab_set()
+
+    def update(self, text=""):
+        if bool(text):
+            self.progress_label.configure(text=text)
+        self.progress_bar.update()
 
     def destroy(self):
         self.progress_bar.stop()
