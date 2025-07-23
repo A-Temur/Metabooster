@@ -10,6 +10,7 @@ from tkinter import filedialog
 
 import customtkinter
 from PIL import Image
+from PIL.ImageOps import expand
 
 
 def center_window(window, width, height):
@@ -37,7 +38,7 @@ class MainWindow(customtkinter.CTk):
         self.title("MetaBooster")
         # Increased height to make space for the logo
         # self.geometry("1000x670")
-        center_window(self, 1000, 670)
+        center_window(self, 844, 677)
 
         # list of supported media files with custom descriptions
         self.supported_files = [".jpg", ".jpeg", ".png", ".gif", ".mp4", ".heic", ".pdf"]
@@ -53,10 +54,36 @@ class MainWindow(customtkinter.CTk):
         customtkinter.set_appearance_mode("Dark")
         customtkinter.set_default_color_theme("dark-blue")
 
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         # # Configure column 0 to have equal weight for centering the logo
         # self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        main_frame = customtkinter.CTkFrame(self)
+        main_frame.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
+
+
+        logo_frame = customtkinter.CTkFrame(main_frame)
+        logo_frame.grid_rowconfigure(0, weight=1)
+        logo_frame.grid_columnconfigure(0, weight=1)
+        logo_frame.grid_columnconfigure(1, weight=1)
+        logo_frame.grid_columnconfigure(2, weight=1)
+        logo_frame.pack(fill="both", pady=(0, 10))
+
+        directory_frame = customtkinter.CTkFrame(main_frame)
+        directory_frame.grid_columnconfigure(1, weight=1)
+        directory_frame.pack(fill="both")
+
+        fields_frame = customtkinter.CTkFrame(main_frame)
+        fields_frame.grid_columnconfigure(1, weight=1)
+        fields_frame.pack(fill="both")
+
+        buttons_frame = customtkinter.CTkFrame(main_frame)
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        buttons_frame.grid_columnconfigure(1, weight=1)
+        buttons_frame.grid_columnconfigure(2, weight=1)
+        buttons_frame.pack(fill="both")
+
 
         self.GITHUB_URL = "https://github.com/A-Temur"
         self.KOFI_URL = "https://ko-fi.com/your-username"
@@ -66,8 +93,8 @@ class MainWindow(customtkinter.CTk):
             gh_image_data = Image.open("../media/github-mark-white.png")
             gh_image = customtkinter.CTkImage(gh_image_data, gh_image_data, (50, 50))
 
-            gh_label = customtkinter.CTkLabel(self, image=gh_image, text="")
-            gh_label.grid(row=0, column=0, pady=(20, 10), sticky="e")
+            gh_label = customtkinter.CTkLabel(logo_frame, image=gh_image, text="")
+            gh_label.grid(row=0, column=0, sticky="e")
 
             # Make the label clickable
             gh_label.bind("<Button-1>", lambda e: self.open_link(self.GITHUB_URL))
@@ -84,14 +111,14 @@ class MainWindow(customtkinter.CTk):
             )
             # Create a label to display the image. 
             # columnspan=3 makes it span all columns, allowing it to be centered.
-            logo_label = customtkinter.CTkLabel(self, image=logo_image, text="")
-            logo_label.grid(row=0, column=1, pady=(20, 10))
+            logo_label = customtkinter.CTkLabel(logo_frame, image=logo_image, text="")
+            logo_label.grid(row=0, column=1)
 
             kofi_image_data = Image.open("../media/support_me_on_kofi_badge_blue.png")
             kofi_image = customtkinter.CTkImage(kofi_image_data, kofi_image_data, (80, 50))
 
-            kofi_label = customtkinter.CTkLabel(self, image=kofi_image, text="")
-            kofi_label.grid(row=0, column=2, pady=(20, 10), sticky="w")
+            kofi_label = customtkinter.CTkLabel(logo_frame, image=kofi_image, text="")
+            kofi_label.grid(row=0, column=2, sticky="w")
 
             # Make the label clickable
             kofi_label.bind("<Button-1>", lambda e: self.open_link(self.KOFI_URL))
@@ -104,110 +131,156 @@ class MainWindow(customtkinter.CTk):
             logo_label = customtkinter.CTkLabel(self, text="My Application", font=("Arial", 24))
             logo_label.grid(row=0, column=1, columnspan=3, pady=(20, 10))
 
+        # def reset_border_color(target_widget):
+        #     if not target_widget.already_changed:
+        #
+        #         target_widget.configure(border_color='#565B5E')
+        #         target_widget.already_changed = True
+
         # 3. Select your Projects directory:
-        self.dir1_label = customtkinter.CTkLabel(self, text="Select the Target directory:")
-        self.dir1_label.grid(row=1, column=0, padx=10, pady=(10, 5), sticky="w")
-        self.target_dir = customtkinter.CTkEntry(self, placeholder_text="Select directory...")
-        self.target_dir.grid(row=1, column=1, padx=10, pady=(10, 5), sticky="ew")
-        self.dir1_button = customtkinter.CTkButton(self, text="Browse...",
+
+        def reset_border_color(new_value, target_widget):
+            """
+            Resets border color once, when input received
+            :param new_value:
+            :param target_widget:
+            :return:
+            """
+            if not target_widget.already_changed:
+                new_value = new_value[0]
+                # check whether the new value isn't only the placeholder text and not empty str
+                if new_value != '' and new_value != target_widget._placeholder_text:
+                    target_widget.configure(border_color="#565B5E")
+                    target_widget.already_changed = True
+            return True  # Always allow the input
+
+
+        self.dir1_label = customtkinter.CTkLabel(directory_frame, text="Select the Target directory:")
+        self.dir1_label.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="w")
+        self.target_dir = customtkinter.CTkEntry(directory_frame, placeholder_text="Select directory...",
+                                                 border_color="green")
+        self.target_dir.grid(row=0, column=1, padx=10, pady=(10, 5), sticky="ew")
+        self.dir1_button = customtkinter.CTkButton(directory_frame, text="Browse...",
                                                    command=lambda: self.select_dir(self.target_dir))
-        self.dir1_button.grid(row=1, column=2, padx=10, pady=(10, 5), sticky="e")
+        self.dir1_button.grid(row=0, column=2, padx=10, pady=(10, 5), sticky="e")
+
+        # used for determining whether border color already changed
+        self.target_dir.already_changed = False
+
+
+        # vcmd = (self.register(validate_input), '%P')
+        self.target_dir.configure(validate='key',
+                                  validatecommand=(self.register(lambda *args: reset_border_color(args,
+                                                                                                  self.target_dir)),
+                                                   '%P'))
 
         # 4. Select output directory location
-        self.dir2_label = customtkinter.CTkLabel(self, text="Select output directory location:")
-        self.dir2_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
-        self.out_dir = customtkinter.CTkEntry(self,
-                                              placeholder_text="Select the location of the resulting PyPortable output...")
-        self.out_dir.grid(row=2, column=1, padx=10, pady=5, sticky="ew")
-        self.dir2_button = customtkinter.CTkButton(self, text="Browse...",
+        self.dir2_label = customtkinter.CTkLabel(directory_frame, text="Select output directory location:")
+        self.dir2_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        self.out_dir = customtkinter.CTkEntry(directory_frame,
+                                              placeholder_text="Select the location of the resulting PyPortable output...",
+                                              border_color='green')
+        self.out_dir.grid(row=1, column=1, padx=10, pady=5, sticky="ew")
+        self.dir2_button = customtkinter.CTkButton(directory_frame, text="Browse...",
                                                    command=lambda: self.select_dir(self.out_dir))
-        self.dir2_button.grid(row=2, column=2, padx=10, pady=5, sticky="e")
+        self.dir2_button.grid(row=1, column=2, padx=10, pady=5, sticky="e")
+
+        # used for determining whether border color already changed
+        self.out_dir.already_changed = False
+
+
+        # vcmd = (self.register(validate_input), '%P')
+        self.out_dir.configure(validate='key',
+                                  validatecommand=(self.register(lambda *args: reset_border_color(args,
+                                                                                                  self.out_dir)),
+                                                   '%P'))
 
         # String Inputs
         # Author
-        self.author_label = customtkinter.CTkLabel(self, text="Author:")
-        self.author_label.grid(row=3, column=0, padx=10, pady=(20, 5), sticky="w")
-        self.author_entry = customtkinter.CTkEntry(self, placeholder_text="Enter author name")
-        self.author_entry.grid(row=3, column=1, columnspan=2, padx=10, pady=(20, 5), sticky="ew")
+        self.author_label = customtkinter.CTkLabel(fields_frame, text="Author:")
+        self.author_label.grid(row=0, column=0, padx=10, pady=(20, 5), sticky="w")
+        self.author_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="Enter author name")
+        self.author_entry.grid(row=0, column=1, columnspan=2, padx=10, pady=(20, 5), sticky="ew")
         self.str_inputs.append(self.author_entry)
 
         # Copyright
-        self.copyright_label = customtkinter.CTkLabel(self, text="Copyright:")
-        self.copyright_label.grid(row=4, column=0, padx=10, pady=5, sticky="w")
-        self.copyright_entry = customtkinter.CTkEntry(self,
+        self.copyright_label = customtkinter.CTkLabel(fields_frame, text="Copyright:")
+        self.copyright_label.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+        self.copyright_entry = customtkinter.CTkEntry(fields_frame,
                                                       placeholder_text="e.g. Copyright 2025 OG-Brain.com, Abdullah Temur. All rights reserved.")
-        self.copyright_entry.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.copyright_entry.grid(row=1, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.copyright_entry)
 
         # Media Description
-        self.media_desc_label = customtkinter.CTkLabel(self, text="Default Media Description:")
-        self.media_desc_label.grid(row=5, column=0, padx=10, pady=5, sticky="w")
-        self.media_desc_entry = customtkinter.CTkEntry(self, placeholder_text="e.g. Media for OG-Brain.com")
-        self.media_desc_entry.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.media_desc_label = customtkinter.CTkLabel(fields_frame, text="Default Media Description:")
+        self.media_desc_label.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+        self.media_desc_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g. Media for OG-Brain.com")
+        self.media_desc_entry.grid(row=2, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.media_desc_entry)
 
         # Keywords
-        self.keywords_label = customtkinter.CTkLabel(self, text="Keywords (Comma separated):")
-        self.keywords_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
-        self.keywords_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: OG-Brain, Abdullah Temur, ")
-        self.keywords_entry.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.keywords_label = customtkinter.CTkLabel(fields_frame, text="Keywords (Comma separated):")
+        self.keywords_label.grid(row=3, column=0, padx=10, pady=5, sticky="w")
+        self.keywords_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: OG-Brain, Abdullah Temur, ")
+        self.keywords_entry.grid(row=3, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.keywords_entry)
 
         # Media Title Prefix
-        self.title_prefix_label = customtkinter.CTkLabel(self, text="Media Title Prefix:")
-        self.title_prefix_label.grid(row=7, column=0, padx=10, pady=5, sticky="w")
-        self.title_prefix_entry = customtkinter.CTkEntry(self, placeholder_text="Enter media title prefix")
-        self.title_prefix_entry.grid(row=7, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.title_prefix_label = customtkinter.CTkLabel(fields_frame, text="Media Title Prefix:")
+        self.title_prefix_label.grid(row=4, column=0, padx=10, pady=5, sticky="w")
+        self.title_prefix_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="Enter media title prefix")
+        self.title_prefix_entry.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.title_prefix_entry)
 
         # Directory Title Prefix
-        self.dir_prefix_label = customtkinter.CTkLabel(self, text="Directory Title Prefix:")
-        self.dir_prefix_label.grid(row=8, column=0, padx=10, pady=5, sticky="w")
-        self.dir_prefix_entry = customtkinter.CTkEntry(self, placeholder_text="e.g. OG-Brain.com directory ")
-        self.dir_prefix_entry.grid(row=8, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.dir_prefix_label = customtkinter.CTkLabel(fields_frame, text="Directory Title Prefix:")
+        self.dir_prefix_label.grid(row=5, column=0, padx=10, pady=5, sticky="w")
+        self.dir_prefix_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g. OG-Brain.com directory ")
+        self.dir_prefix_entry.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.dir_prefix_entry)
 
         # Default directory metadata file description
-        self.dir_file_desc_label = customtkinter.CTkLabel(self, text="Default directory file description:")
-        self.dir_file_desc_label.grid(row=9, column=0, padx=10, pady=5, sticky="w")
-        self.dir_file_desc_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: Directory metadata file")
-        self.dir_file_desc_entry.grid(row=9, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.dir_file_desc_label = customtkinter.CTkLabel(fields_frame, text="Default directory file description:")
+        self.dir_file_desc_label.grid(row=6, column=0, padx=10, pady=5, sticky="w")
+        self.dir_file_desc_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: Directory metadata file")
+        self.dir_file_desc_entry.grid(row=6, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.dir_file_desc_entry)
 
         # HTML File for JSON-LD
-        self.jsonld_html_label = customtkinter.CTkLabel(self, text="HTML File for JSON-LD:")
-        self.jsonld_html_label.grid(row=10, column=0, padx=10, pady=5, sticky="w")
-        self.jsonld_html_entry = customtkinter.CTkEntry(self,
+        self.jsonld_html_label = customtkinter.CTkLabel(fields_frame, text="HTML File for JSON-LD:")
+        self.jsonld_html_label.grid(row=7, column=0, padx=10, pady=5, sticky="w")
+        self.jsonld_html_entry = customtkinter.CTkEntry(fields_frame,
                                                         placeholder_text="Enter your HTML filename (leave empty if not needed), e.g.: index.html")
-        self.jsonld_html_entry.grid(row=10, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.jsonld_html_entry.grid(row=7, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.jsonld_html_entry)
 
         # Default name jsonld file
-        self.jsonld_filename_label = customtkinter.CTkLabel(self, text="Default name of jsonld file:")
-        self.jsonld_filename_label.grid(row=11, column=0, padx=10, pady=5, sticky="w")
-        self.jsonld_filename_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: media_jsonld.json")
-        self.jsonld_filename_entry.grid(row=11, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.jsonld_filename_label = customtkinter.CTkLabel(fields_frame, text="Default name of jsonld file:")
+        self.jsonld_filename_label.grid(row=8, column=0, padx=10, pady=5, sticky="w")
+        self.jsonld_filename_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: media_jsonld.json")
+        self.jsonld_filename_entry.grid(row=8, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.jsonld_filename_entry)
 
         # Website URL
-        self.website_label = customtkinter.CTkLabel(self, text="Website URL:")
-        self.website_label.grid(row=12, column=0, padx=10, pady=5, sticky="w")
-        self.website_entry = customtkinter.CTkEntry(self, placeholder_text="e.g.: https://www.og-brain.com")
-        self.website_entry.grid(row=12, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
+        self.website_label = customtkinter.CTkLabel(fields_frame, text="Website URL:")
+        self.website_label.grid(row=9, column=0, padx=10, pady=5, sticky="w")
+        self.website_entry = customtkinter.CTkEntry(fields_frame, placeholder_text="e.g.: https://www.og-brain.com")
+        self.website_entry.grid(row=9, column=1, columnspan=2, padx=10, pady=5, sticky="ew")
         self.str_inputs.append(self.website_entry)
 
-        # JSON-LD Filename
-        self.jsonld_edit_button = customtkinter.CTkButton(self, text="Edit JSON-LD HEAD", command=self.open_jsonld_editor)
-        self.jsonld_edit_button.grid(row=13, column=2, padx=10, pady=5, sticky="e")
-
         # custom descriptions
-        self.custom_desc_button = customtkinter.CTkButton(self, text="Create Custom Descriptions",
-                                                          command=self.create_custom_descriptions)
-        self.custom_desc_button.grid(row=13, column=0, padx=10, pady=5, sticky="w")
+        self.custom_desc_button = customtkinter.CTkButton(buttons_frame, text="Create Custom Descriptions",
+                                                          command=self.create_custom_descriptions, width=200)
+        self.custom_desc_button.grid(row=0, column=0, pady=5, padx=30)
 
-        # Submit Button
-        self.submit_button = customtkinter.CTkButton(self, text="Run Metabooster", command=self.submit)
-        self.submit_button.grid(row=13, column=1, padx=10, pady=5, sticky="e")
+        # Run metabooster button
+        self.submit_button = customtkinter.CTkButton(buttons_frame, text="Run Metabooster", command=self.submit, width=200)
+        self.submit_button.grid(row=0, column=1, pady=5, padx=30)
+
+        # JSON-LD HEAD edit button
+        self.jsonld_edit_button = customtkinter.CTkButton(buttons_frame, text="Edit JSON-LD HEAD", command=self.open_jsonld_editor, width=200)
+        self.jsonld_edit_button.grid(row=0, column=2, pady=5, padx=30)
+
 
         self.load_conf()
 
