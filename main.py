@@ -4,10 +4,10 @@ Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 import datetime
 import sys
 
-import easygui
 from PIL import Image
 from bs4 import BeautifulSoup
-from easygui import diropenbox, enterbox
+from easygui import enterbox, msgbox
+from gui_context import GuiContext
 from mutagen.mp4 import MP4
 from shutil import copytree
 from os.path import basename, splitext
@@ -18,7 +18,7 @@ import json
 import re
 import exiftool
 import platform
-from conf import *
+from schema import *
 from pypdf import PdfReader, PdfWriter
 
 # TODO
@@ -30,6 +30,11 @@ def add_metadata_to_pdf(file_path_, metadata_, file_name_):
     # Read the PDF
     reader = PdfReader(file_path_)
     writer = PdfWriter()
+
+    file_name_extended = basename(file_path_)
+
+    if file_name_extended in custom_descriptions.keys():
+        metadata_["/Subject"] = custom_descriptions[file_name_extended]
 
     metadata_['/Title'] += file_name_
 
@@ -43,6 +48,8 @@ def add_metadata_to_pdf(file_path_, metadata_, file_name_):
     # Save the modified PDF
     with open(file_path_, "wb") as output_file:
         writer.write(output_file)
+
+    user_feedback(f"Created modified pdf: {file_path_}")
 
 
 def check_and_write_comment(search_str_, file_writer_, original_content_, new_content_, css=True):
@@ -100,7 +107,7 @@ def add_metadata_to_heic_image(file_path_, metadata_, file_name_, metadata_jsonl
             # -P parameter preservers original modification date
 
         add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
-        print(f"Created modified image: {file_path_}")
+        user_feedback(f"Created modified image: {file_path_}")
     except Exception as e:
         print(f"Error processing image {file_path_}: {e}")
 
@@ -123,7 +130,7 @@ def add_metadata_to_image(file_path_, metadata_, file_name_, metadata_jsonld_):
         img.save(file_path_, exif=exif_data)
 
         add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
-        print(f"Created modified image: {file_path_}")
+        user_feedback(f"Created modified image: {file_path_}")
     except Exception as e:
         print(f"Error processing image {file_path_}: {e}")
 
@@ -168,7 +175,7 @@ def add_metadata_to_video(file_path_, metadata_, file_name_, metadata_jsonld_):
                 metadata_jsonld_["description"] = custom_descriptions[file_name_extended]
             # append to json-ld
             json_ld["@graph"].append(metadata_jsonld_)
-            print(f"Created modified video: {file_path_}")
+            user_feedback(f"Created modified video: {file_path_}")
         else:
             print(f"Skipping non-MP4 video file: {file_path_}")
     except Exception as e:
@@ -191,7 +198,7 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
             subprocess.run(cmd, check=True)
 
         add_img_to_jsonld(metadata_jsonld_, file_name_, file_path_)
-        print(f"Created modified image: {file_path_}")
+        user_feedback(f"Created modified image: {file_path_}")
         # exiftool automatically keeps the original file, delete it
         os.remove(file_path_ + "_original")
     except Exception as e:
@@ -200,7 +207,7 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
 
 def get_html_css_comment(file_name_, html=True):
     metadata_ = metadata_html_css.copy()
-    metadata_["Description"] = f"{file_name_} for {media_title_prefix}"
+    metadata_["Description"] = f"{file_name_} for {website}"
     metadata_ = "\n".join(f"{k}: {v}" for k, v in metadata_.items())
     if html:
         comment = html_brackets[0] + "\n" + metadata_ + "\n" + html_brackets[1]
@@ -209,11 +216,75 @@ def get_html_css_comment(file_name_, html=True):
     return comment
 
 
+def set_conf():
+    """
+    sets the configuration variables based on conf.json.
+    """
+    with open("conf.json", 'r', encoding='utf-8') as cfr:
+        custom_conf = json.load(cfr)
+
+    # for each entry in custom_conf, get the variable (with the same name) from schema.py
+    for key, value in custom_conf.items():
+        globals()[key] = value
+
+
+def user_feedback(text_=""):
+    if gui_mode:
+        GuiContext.user_feedback(text_)
+    elif cli_mode:
+        # used for cli feedback
+        print(text_)
+    else:
+        # for context menu feedback
+        pass
+
+
 if __name__ == "__main__":
     # Convert string keys to EXIF tag IDs if possible
     # from PIL.ExifTags import TAGS
     # exif_tag_map = {TAGS[key]: key for key in TAGS if isinstance(key, int)}
     default_date = datetime.datetime.now().isoformat()
+
+    # flags
+    # sys.argv[1] = source directory (fullpath)
+    # sys.argv[2] = new directory (fullpath)
+    # sys.argv[3] = mode (either gui or context_menu), if this list item is missing = cli_mode
+
+    """
+    the default mode is cli (if gui mode and context menu mode flags are False
+    """
+
+    set_conf()
+
+    try:
+        if sys.argv[3] == "gui":
+            gui_mode = True
+            win_context_menu = False
+            cli_mode = False
+        elif sys.argv[3] == "context_menu":
+            gui_mode = False
+            win_context_menu = True
+            cli_mode = False
+    except IndexError:
+        gui_mode = False
+        win_context_menu = False
+        cli_mode = True
+
+
+    directory = sys.argv[1]
+    final_dir = sys.argv[2]
+
+
+    if win_context_menu:
+        final_dir_name = ""
+        while not bool(final_dir_name):
+            final_dir_name = enterbox("Enter destination directory name")
+        original_dir_name = basename(directory)
+        while final_dir_name == basename(directory):
+            final_dir_name = enterbox("new directory name must be unique")
+
+        final_dir = directory.replace(original_dir_name, final_dir_name)
+
 
     is_windows = platform.system() == "Windows"
 
@@ -343,151 +414,150 @@ if __name__ == "__main__":
     html_brackets = ("<!--", "-->")
     css_brackets = ("/*", "*/")
 
-    if is_windows:
-        directory = sys.argv[1]
-    else:
-        directory = easygui.diropenbox("select directory")
+    user_feedback("copying files...")
+    copytree(directory, final_dir)
 
-    if directory:
-        final_dir_name = enterbox("Enter destination directory name")
+    working_directory = final_dir
 
-        if final_dir_name:
-            original_dir_name = basename(directory)
+    for root, dirs, files in os.walk(final_dir):
 
-            while final_dir_name == original_dir_name:
-                final_dir_name = enterbox("new directory name must be unique")
+        # create metadata file for each directory
+        for dir_name in dirs:
+            metadata_file = os.path.join(root, dir_name, ".metadata.yaml")
 
-            final_dir = directory.replace(original_dir_name, final_dir_name)
+            metadata_content = metadata_yaml.copy()
+            metadata_content["title"] += dir_name
 
-            copytree(directory, final_dir)
+            user_feedback(f"creating metadata file for directory{dir_name}")
 
-            working_directory = final_dir
+            with open(metadata_file, "w", encoding="utf-8") as f:
+                yaml.dump(metadata_content, f, default_flow_style=False, allow_unicode=True)
+        # edit metadata of media (videos, images)
+        for file in files:
+            file_path = os.path.join(root, file)
 
-            for root, dirs, files in os.walk(final_dir):
+            # get filename without extension
+            file_name = splitext(basename(file_path))[0]
 
-                # create metadata file for each directory
-                for dir_name in dirs:
-                    metadata_file = os.path.join(root, dir_name, ".metadata.yaml")
+            if file.lower().endswith(".heic"):
+                user_feedback(f"adding metadata to {file_name}")
 
-                    metadata_content = metadata_yaml.copy()
-                    metadata_content["title"] += dir_name
+                metadata_heic_cpy = metadata_heic.copy()
 
-                    with open(metadata_file, "w", encoding="utf-8") as f:
-                        yaml.dump(metadata_content, f, default_flow_style=False, allow_unicode=True)
-                # edit metadata of media (videos, images)
-                for file in files:
-                    file_path = os.path.join(root, file)
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                    # get filename without extension
-                    file_name = splitext(basename(file_path))[0]
+                add_metadata_to_heic_image(file_path, metadata_heic_cpy, file_name, json_ld_img_cpy)
 
-                    if file.lower().endswith(".heic"):
-                        metadata_heic_cpy = metadata_heic.copy()
+            elif file.lower().endswith((".jpg", ".jpeg", ".png")):
+                user_feedback(f"adding metadata to {file_name}")
+                metadata_img_cpy = metadata_img.copy()
 
-                        # copy default json-ld for images
-                        json_ld_img_cpy = metadata_json_ld_img.copy()
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                        add_metadata_to_heic_image(file_path, metadata_heic_cpy, file_name, json_ld_img_cpy)
+                add_metadata_to_image(file_path, metadata_img_cpy, file_name, json_ld_img_cpy)
+            elif file.lower().endswith((".mp4", ".mov")):
+                user_feedback(f"adding metadata to {file_name}")
+                metadata_vid_cpy = metadata_vid.copy()
 
-                    elif file.lower().endswith((".jpg", ".jpeg", ".png")):
-                        metadata_img_cpy = metadata_img.copy()
+                # copy default json-ld for videos
+                json_ld_vid_cpy = metadata_json_ld_vid.copy()
 
-                        # copy default json-ld for images
-                        json_ld_img_cpy = metadata_json_ld_img.copy()
+                add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
+            elif file.lower().endswith(".gif"):
+                user_feedback(f"adding metadata to {file_name}")
+                metadata_gif_cpy = metadata_gif.copy()
 
-                        add_metadata_to_image(file_path, metadata_img_cpy, file_name, json_ld_img_cpy)
-                    elif file.lower().endswith((".mp4", ".mov")):
-                        metadata_vid_cpy = metadata_vid.copy()
+                # copy default json-ld for images
+                json_ld_img_cpy = metadata_json_ld_img.copy()
 
-                        # copy default json-ld for videos
-                        json_ld_vid_cpy = metadata_json_ld_vid.copy()
+                add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
 
-                        add_metadata_to_video(file_path, metadata_vid_cpy, file_name, json_ld_vid_cpy)
-                    elif file.lower().endswith(".gif"):
-                        metadata_gif_cpy = metadata_gif.copy()
+            elif file.lower().endswith(".html"):
+                # metadata_html = metadata_html_css.copy()
+                # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
+                # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
+                # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
+                html_comment = get_html_css_comment(file_name)
+                with open(file_path, "r", encoding="utf-8") as html_file:
+                    original_content = html_file.read()
 
-                        # copy default json-ld for images
-                        json_ld_img_cpy = metadata_json_ld_img.copy()
+                if html_comment not in original_content:
+                    with open(file_path, "w", encoding="utf-8") as html_file:
+                        check_and_write_comment("Copyright:", html_file, original_content, html_comment, False)
 
-                        add_metadata_to_gif(file_path, metadata_gif_cpy, file_name, json_ld_img_cpy)
+            elif file.lower().endswith(".css"):
+                # metadata_css = metadata_html_css.copy()
+                # metadata_css["Description"] = f"{file_name} for {media_title_prefix}"
+                # metadata_css = "\n".join(f"{k}: {v}" for k, v in metadata_css.items())
+                # css_comment = css_brackets[0] + "\n" + metadata_css + "\n" + css_brackets[1]
+                css_comment = get_html_css_comment(file_name, False)
+                with open(file_path, "r", encoding="utf-8") as css_file:
+                    original_content = css_file.read()
 
-                    elif file.lower().endswith(".html"):
-                        # metadata_html = metadata_html_css.copy()
-                        # metadata_html["Description"] = f"{file_name} for {media_title_prefix}"
-                        # metadata_html = "\n".join(f"{k}: {v}" for k, v in metadata_html.items())
-                        # html_comment = html_brackets[0] + "\n" + metadata_html + "\n" + html_brackets[1]
-                        html_comment = get_html_css_comment(file_name)
-                        with open(file_path, "r", encoding="utf-8") as html_file:
-                            original_content = html_file.read()
+                if css_comment not in original_content:
+                    with open(file_path, "w", encoding="utf-8") as css_file:
+                        check_and_write_comment("Copyright:", css_file, original_content, css_comment, True)
 
-                        if html_comment not in original_content:
-                            with open(file_path, "w", encoding="utf-8") as html_file:
-                                check_and_write_comment("Copyright:", html_file, original_content, html_comment, False)
+            elif file.lower().endswith(".pdf"):
+                user_feedback(f"adding metadata to {file_name}")
+                metadata_pdf_cpy = metadata_pdf.copy()
 
-                    elif file.lower().endswith(".css"):
-                        # metadata_css = metadata_html_css.copy()
-                        # metadata_css["Description"] = f"{file_name} for {media_title_prefix}"
-                        # metadata_css = "\n".join(f"{k}: {v}" for k, v in metadata_css.items())
-                        # css_comment = css_brackets[0] + "\n" + metadata_css + "\n" + css_brackets[1]
-                        css_comment = get_html_css_comment(file_name, False)
-                        with open(file_path, "r", encoding="utf-8") as css_file:
-                            original_content = css_file.read()
+                add_metadata_to_pdf(file_path, metadata_pdf_cpy, file_name)
 
-                        if css_comment not in original_content:
-                            with open(file_path, "w", encoding="utf-8") as css_file:
-                                check_and_write_comment("Copyright:", css_file, original_content, css_comment, True)
+            else:
+                user_feedback(f"Skipping unsupported file: {file_path}")
 
-                    elif file.lower().endswith(".pdf"):
-                        metadata_pdf_cpy = metadata_pdf.copy()
+    # Save JSON content to a file
+    with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
+        # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
+        # noinspection PyTypeChecker
+        json.dump(json_ld, json_file, indent=4, ensure_ascii=False)
 
-                        add_metadata_to_pdf(file_path, metadata_pdf_cpy, file_name)
+    if bool(add_metadata_json_to_html_file):
 
-                    else:
-                        print(f"Skipping unsupported file: {file_path}")
+        try:
+            # add metadata json to html
+            html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
 
-            # Save JSON content to a file
-            with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
-                # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
-                # noinspection PyTypeChecker
-                json.dump(json_ld, json_file, indent=4)
+            with open(html_file_path, "r", encoding="utf-8") as html_reader:
+                original_html = html_reader.read()
 
-            if bool(add_metadata_json_to_html_file):
+            prettified_html = BeautifulSoup(original_html, "html.parser")
 
-                try:
-                    # add metadata json to html
-                    html_file_path = os.path.join(final_dir, add_metadata_json_to_html_file)
+            script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
+            script_element_exists_in_original = True
+            if not script_element:
+                script_element_exists_in_original = False
+                new_script_element = prettified_html.new_tag("script", type="application/ld+json")
+                new_script_element.string = json.dumps(json_ld, indent=4, ensure_ascii=False)
+                prettified_html.find("head").append(new_script_element)
+            else:
+                script_element.string = json.dumps(json_ld, indent=4, ensure_ascii=False)
 
-                    with open(html_file_path, "r", encoding="utf-8") as html_reader:
-                        original_html = html_reader.read()
+            prettified_html = prettified_html.prettify()
+            pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
+                                           re.DOTALL | re.IGNORECASE).group()
+            if not script_element_exists_in_original:
+                final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
+                                    original_html,
+                                    flags=re.DOTALL | re.IGNORECASE)
+            else:
+                final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>',
+                                    lambda m: pretty_script_part,  # since re.sub() treats the
+                                    # replacement string as a regex replacement pattern thus
+                                    # can result in (bad escape error).
+                                    # Inserting a function only takes the return value as is
+                                    original_html,
+                                    flags=re.DOTALL | re.IGNORECASE)
 
-                    prettified_html = BeautifulSoup(original_html, "html.parser")
+            with open(html_file_path, "w", encoding="utf-8") as html_file:
+                html_file.write(final_html)
 
-                    script_element = prettified_html.find("script", attrs={"type": "application/ld+json"})
-                    script_element_exists_in_original = True
-                    if not script_element:
-                        script_element_exists_in_original = False
-                        new_script_element = prettified_html.new_tag("script", type="application/ld+json")
-                        new_script_element.string = json.dumps(json_ld, indent=4)
-                        prettified_html.find("head").append(new_script_element)
-                    else:
-                        script_element.string = json.dumps(json_ld, indent=4)
+        except FileNotFoundError:
+            user_feedback(f"couldn't find {html_file_path}, skipping auto insert of jsonld file")
 
-                    prettified_html = prettified_html.prettify()
-                    pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
-                                                   re.DOTALL | re.IGNORECASE).group()
-                    if not script_element_exists_in_original:
-                        final_html = re.sub(r'</head>', f"{pretty_script_part + "\n" + "</head>"}",
-                                            original_html,
-                                            flags=re.DOTALL | re.IGNORECASE)
-                    else:
-                        final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
-                                            original_html,
-                                            flags=re.DOTALL | re.IGNORECASE)
 
-                    with open(html_file_path, "w", encoding="utf-8") as html_file:
-                        html_file.write(final_html)
-
-                except FileNotFoundError:
-                    print(f"couldn't find {html_file_path}, skipping auto insert of jsonld file")
-
-    input("Metabooster finished, Press Enter to exit...")
+    if win_context_menu:
+        msgbox("Metabooster finished metaboosting your data!")

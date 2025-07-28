@@ -4,3 +4,6 @@ mutagen~=1.47.0
 easygui~=0.98.3
 PyYAML~=6.0.2
 beautifulsoup4~=4.13.3
+pypdf~=5.8.0
+customtkinter~=5.2.2
+tkinter-tooltip~=3.1.2
