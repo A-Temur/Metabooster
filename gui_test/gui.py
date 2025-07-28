@@ -5,12 +5,15 @@ Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 import importlib
 import json
 import os
+import runpy
+import sys
+import gui_context
 import webbrowser
 from tkinter import filedialog
 
 import customtkinter
 from PIL import Image
-from PIL.ImageOps import expand
+# noinspection PyPackageRequirements
 from tktooltip import ToolTip
 
 
@@ -35,7 +38,6 @@ class MainWindow(customtkinter.CTk):
         all_bool = [x.required_condition_met for x in self._required_widgets]
         return all(all_bool)
 
-
     def __init__(self):
         super().__init__()
 
@@ -56,6 +58,17 @@ class MainWindow(customtkinter.CTk):
 
         # used to store a list of all string inputs for convenient access
         self.str_inputs = []
+
+        # holds the conf
+        self.conf = None
+
+        # holds original conf
+        self.original_conf = None
+
+        # save when closing main window
+        self.save_jsonld = False
+        self.save_custom_desc = False
+
 
         customtkinter.set_appearance_mode("Dark")
         customtkinter.set_default_color_theme("dark-blue")
@@ -155,6 +168,7 @@ class MainWindow(customtkinter.CTk):
             if not target_widget.required_condition_met:
                 new_value = new_value[0]
                 # check whether the new value isn't only the placeholder text and not empty str
+                # noinspection PyProtectedMember
                 if new_value != '' and new_value != target_widget._placeholder_text:
                     target_widget.configure(border_color="#565B5E")
                     target_widget.required_condition_met = True
@@ -182,6 +196,7 @@ class MainWindow(customtkinter.CTk):
 
 
         # vcmd = (self.register(validate_input), '%P')
+        # noinspection PyTypeChecker
         self.target_dir.configure(validate='key',
                                   validatecommand=(self.register(lambda *args: reset_border_color(args,
                                                                                                   self.target_dir)),
@@ -204,7 +219,7 @@ class MainWindow(customtkinter.CTk):
         self.create_new_dir = False
 
 
-        # vcmd = (self.register(validate_input), '%P')
+        # noinspection PyTypeChecker
         self.out_dir.configure(validate='key',
                                   validatecommand=(self.register(lambda *args: reset_border_color(args,
                                                                                                   self.out_dir)),
@@ -315,6 +330,8 @@ class MainWindow(customtkinter.CTk):
 
         self.load_conf()
 
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
     def select_dir(self, target_entry_widget, target_dir_selected=True):
         path = filedialog.askdirectory()
         if path:
@@ -329,82 +346,126 @@ class MainWindow(customtkinter.CTk):
             else:
                 self.create_new_dir = True
 
+    def on_close(self):
+        if self.save_jsonld:
+            self.original_conf["json_ld"] = self.conf["json_ld"]
+        elif self.save_custom_desc:
+            self.original_conf["custom_descriptions"] = self.conf["custom_descriptions"]
+
+        if self.save_jsonld or self.save_custom_desc:
+            with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+                json.dump(self.original_conf, f, indent=4)
+
+        self.destroy()
+
+
     def load_conf(self):
         popup_progressbar = PopupProgressBar(self, "Loading Configuration", "Loading files...")
 
-        with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
+        with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
             custom_conf = json.load(f)
-            popup_progressbar.progress_bar.update()
 
-            self.author_entry.delete(0, "end")
-            self.author_entry.insert(0, custom_conf["autor"])
-            popup_progressbar.progress_bar.update()
+        self.original_conf = custom_conf
+        self.conf = custom_conf
+        popup_progressbar.progress_bar.update()
 
-            self.copyright_entry.delete(0, "end")
-            self.copyright_entry.insert(0, custom_conf["copyright_"])
-            popup_progressbar.progress_bar.update()
+        self.author_entry.delete(0, "end")
+        self.author_entry.insert(0, custom_conf["autor"])
+        popup_progressbar.progress_bar.update()
 
-            self.media_desc_entry.delete(0, "end")
-            self.media_desc_entry.insert(0, custom_conf["default_media_description"])
-            popup_progressbar.progress_bar.update()
+        self.copyright_entry.delete(0, "end")
+        self.copyright_entry.insert(0, custom_conf["copyright_"])
+        popup_progressbar.progress_bar.update()
 
-            self.keywords_entry.delete(0, "end")
-            self.keywords_entry.insert(0, custom_conf["keywords"])
-            popup_progressbar.progress_bar.update()
+        self.media_desc_entry.delete(0, "end")
+        self.media_desc_entry.insert(0, custom_conf["default_media_description"])
+        popup_progressbar.progress_bar.update()
 
-            self.title_prefix_entry.delete(0, "end")
-            self.title_prefix_entry.insert(0, custom_conf["media_title_prefix"])
-            popup_progressbar.progress_bar.update()
+        self.keywords_entry.delete(0, "end")
+        self.keywords_entry.insert(0, custom_conf["keywords"])
+        popup_progressbar.progress_bar.update()
 
-            self.dir_prefix_entry.delete(0, "end")
-            self.dir_prefix_entry.insert(0, custom_conf["directory_title_prefix"])
-            popup_progressbar.progress_bar.update()
+        self.title_prefix_entry.delete(0, "end")
+        self.title_prefix_entry.insert(0, custom_conf["media_title_prefix"])
+        popup_progressbar.progress_bar.update()
 
-            self.dir_file_desc_entry.delete(0, "end")
-            self.dir_file_desc_entry.insert(0, custom_conf["default_directory_description"])
-            popup_progressbar.progress_bar.update()
+        self.dir_prefix_entry.delete(0, "end")
+        self.dir_prefix_entry.insert(0, custom_conf["directory_title_prefix"])
+        popup_progressbar.progress_bar.update()
 
-            self.jsonld_html_entry.delete(0, "end")
-            self.jsonld_html_entry.insert(0, custom_conf["add_metadata_json_to_html_file"])
-            popup_progressbar.progress_bar.update()
+        self.dir_file_desc_entry.delete(0, "end")
+        self.dir_file_desc_entry.insert(0, custom_conf["default_directory_description"])
+        popup_progressbar.progress_bar.update()
 
-            self.jsonld_filename_entry.delete(0, "end")
-            self.jsonld_filename_entry.insert(0, custom_conf["default_name_jsonld_file"])
-            popup_progressbar.progress_bar.update()
+        self.jsonld_html_entry.delete(0, "end")
+        self.jsonld_html_entry.insert(0, custom_conf["add_metadata_json_to_html_file"])
+        popup_progressbar.progress_bar.update()
 
-            self.website_entry.delete(0, "end")
-            self.website_entry.insert(0, custom_conf["website"])
-            popup_progressbar.progress_bar.update()
+        self.jsonld_filename_entry.delete(0, "end")
+        self.jsonld_filename_entry.insert(0, custom_conf["default_name_jsonld_file"])
+        popup_progressbar.progress_bar.update()
+
+        self.website_entry.delete(0, "end")
+        self.website_entry.insert(0, custom_conf["website"])
+        popup_progressbar.progress_bar.update()
 
         self.after(1500, popup_progressbar.destroy)
 
     def submit(self):
         popup = PopupProgressBar(self, "Loading", "Metaboosting your data...")
         # write all widget entrys into custom conf json
-        with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
-            popup.progress_bar.update()
-            custom_conf = json.load(f)
+        # with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
+        #     popup.update()
+        #     custom_conf = json.load(f)
 
-        popup.progress_bar.update()
-        custom_conf["autor"] = self.author_entry.get()
-        custom_conf["copyright_"] = self.copyright_entry.get()
-        custom_conf["default_media_description"] = self.media_desc_entry.get()
-        custom_conf["keywords"] = self.keywords_entry.get()
-        custom_conf["media_title_prefix"] = self.title_prefix_entry.get()
-        custom_conf["directory_title_prefix"] = self.dir_prefix_entry.get()
-        custom_conf["default_directory_description"] = self.dir_file_desc_entry.get()
-        custom_conf["add_metadata_json_to_html_file"] = self.jsonld_html_entry.get()
-        custom_conf["default_name_jsonld_file"] = self.jsonld_filename_entry.get()
-        custom_conf["website"] = self.website_entry.get()
+        popup.update()
+        self.conf["autor"] = self.author_entry.get()
+        self.conf["copyright_"] = self.copyright_entry.get()
+        self.conf["default_media_description"] = self.media_desc_entry.get()
+        self.conf["keywords"] = self.keywords_entry.get()
+        self.conf["media_title_prefix"] = self.title_prefix_entry.get()
+        self.conf["directory_title_prefix"] = self.dir_prefix_entry.get()
+        self.conf["default_directory_description"] = self.dir_file_desc_entry.get()
+        self.conf["add_metadata_json_to_html_file"] = self.jsonld_html_entry.get()
+        self.conf["default_name_jsonld_file"] = self.jsonld_filename_entry.get()
+        self.conf["website"] = self.website_entry.get()
 
-        popup.progress_bar.update()
-        with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
-            popup.progress_bar.update()
-            json.dump(custom_conf, f, indent=4)
-
-        self.after(1000, popup.destroy)
+        popup.update()
+        with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+            popup.update()
+            json.dump(self.conf, f, indent=4)
 
         # entry point for backend.
+
+        """
+        Abstract:
+        1. Create list of arguments/flags
+            - indicate that the the script is running in gui-mode (e.g. --gui-mode)
+            - pass the progress bar reference
+        2. backend determines that it is running in gui mode, behaves accordingly
+        """
+
+        # custom_globals = {
+        #     # '__name__': '__main__',
+        #     'progress_bar': popup,
+        #     # 'sys': type('MockSys', (), {'argv': ['main.py', f'{self.target_dir.get()}', f'{self.out_dir.get()}','--gui-mode']})()
+        # }
+
+        gui_context.GuiContext.set_gui_ref(popup.update)
+
+        # Save original argv
+        original_argv = sys.argv.copy()
+
+        # Set custom arguments
+        sys.argv = ['main.py', f'{self.target_dir.get()}', f'{self.out_dir.get()}', "gui"]
+
+        runpy.run_module('main', run_name="__main__", alter_sys=True)
+
+        # Restore original sys.argv
+        sys.argv = original_argv
+
+        popup.destroy()
+        self.create_popup_dialog("Finished!", "Metaboosted your files, have fun!")
 
     def create_popup_dialog(self, title_, text_):
         dialog_ = customtkinter.CTkToplevel(self)
@@ -428,12 +489,22 @@ class MainWindow(customtkinter.CTk):
             return
 
         def fill_frame():
+            # with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
+            #     custom_conf = json.load(f)
+
+            conf_keys = self.conf["custom_descriptions"].keys()
+
             for supported_file in self.filtered_files:
+                file_txt = os.path.basename(supported_file)
                 scrollable_frame_label = customtkinter.CTkLabel(scrollable_frame,
-                                                                text=f"{os.path.basename(supported_file)}")
+                                                                text=f"{file_txt}")
                 scrollable_frame_label.pack(padx=10, pady=5, anchor="w")
                 scrollable_frame_input = customtkinter.CTkEntry(scrollable_frame, placeholder_text="Leave empty, if there's no need")
                 scrollable_frame_input.pack(padx=10, pady=5, anchor="w", fill="x")
+
+                if file_txt in conf_keys:
+                    scrollable_frame_input.insert(0, self.conf["custom_descriptions"][file_txt])
+
                 scrollable_frame.labels.append((scrollable_frame_label, scrollable_frame_input))
 
         def fill_files_list():
@@ -450,17 +521,19 @@ class MainWindow(customtkinter.CTk):
             for lis_item_ in scrollable_frame.labels:
                 custom_descript = lis_item_[1].get()
                 if len(custom_descript) >= 1:
+                    # noinspection PyProtectedMember
                     filename = lis_item_[0]._text
                     json_dict_[filename] = custom_descript
 
             if len(json_dict_) >= 1:
                 # read custom_conf
-                with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
-                    custom_conf = json.load(f)
-                custom_conf["custom_descriptions"] = json_dict_
+                # with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
+                #     custom_conf = json.load(f)
+                self.conf["custom_descriptions"] = json_dict_
                 # write to custom_conf
-                with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
-                    json.dump(custom_conf, f, indent=4)
+                # with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+                #     json.dump(custom_conf, f, indent=4)
+                self.save_custom_desc = True
 
             new_window.destroy()
             popup_ = PopupProgressBar(self, "Save", "Saving custom descriptions...")
@@ -518,34 +591,37 @@ class MainWindow(customtkinter.CTk):
             self.create_popup_dialog("Error", "No supported files found in target directory")
 
     def open_jsonld_editor(self):
-        def get_conf(key_: str) -> str:
-            # get schema variable via str
-            schema_var = getattr(self.conf_module, key_)
+        def get_conf():
+            # # get schema variable via str
+            # schema_var = getattr(self.conf_module, key_)
 
-            # get default schema conf
-            conf = json.dumps(schema_var, indent=4)
+            # # get default schema conf
+            # conf = json.dumps(schema_var, indent=4)
 
-            # get custom conf instead if it exists
-            if os.path.exists("conf_overwrite/custom_conf.json"):
-                with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
-                    try:
-                        custom_conf = json.load(f)
-                    except json.JSONDecodeError:
-                        print("Invalid JSON format")
-                    # check whether the key exists in custom_conf
-                    if key_ in custom_conf:
-                        conf = json.dumps(custom_conf["json_ld"], indent=4)
+            # with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
+            #     custom_conf = json.load(f)
 
-            return conf
+            custom_conf = self.conf
 
-        def write_conf(key_: str, value_: dict):
-            # read custom_conf
-            with open("conf_overwrite/custom_conf.json", "r", encoding="utf-8") as f:
-                custom_conf = json.load(f)
-            custom_conf[key_] = value_
-            # write to custom_conf
-            with open("conf_overwrite/custom_conf.json", "w", encoding="utf-8") as f:
-                json.dump(custom_conf, f, indent=4)
+            # check whether it is the first time loading json_ld
+            # if yes, create license, description, 'name' dynamically via existing fields (if there are any)
+            if self.conf["load_dynamic_jsonld"]:
+                # schema:
+                # "@type": "CreativeWork",
+                # "license": f"{website}license.txt",
+                # "description": default_media_description,
+                # "author": {
+                #     "@type": "Person",
+                #     "name": autor
+                # }
+                custom_conf["json_ld"]["@graph"][0]["license"] = f"{custom_conf["website"]}/license.txt"
+                custom_conf["json_ld"]["@graph"][0]["description"] = f"{custom_conf["default_media_description"]}"
+                custom_conf["json_ld"]["@graph"][0]["author"]["name"] = f"{custom_conf["autor"]}"
+
+                # change flag
+                custom_conf["load_dynamic_jsonld"] = False
+
+            return custom_conf
 
         def hide_stop_progress_bar(reset_status_=False):
             progress_bar.stop()
@@ -566,7 +642,13 @@ class MainWindow(customtkinter.CTk):
                 # Get content from text widget
                 new_json = json.loads(text_widget.get("1.0", "end"))
 
-                write_conf("json_ld", new_json)
+                self.conf["json_ld"] = new_json
+
+                # save conf
+                # with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+                #     json.dump(conf, f, indent=4)
+
+                self.save_jsonld = True
 
                 hide_stop_progress_bar()
                 editor_window.destroy()
@@ -577,17 +659,20 @@ class MainWindow(customtkinter.CTk):
                 print("Invalid JSON format")
                 text_status.configure(text="Invalid JSON format")
                 hide_stop_progress_bar()
-            except IOError as e:
-                print(f"Error handling files: {e}")
-                text_status.configure(text=f"Error handling files {e.__str__()}")
-                hide_stop_progress_bar()
-            except Exception as e:
-                print(f"Unexpected error: {e}")
-                text_status.configure(text=f"Unexpected error {e.__str__()}")
-                hide_stop_progress_bar()
 
         def cancel_button_clicked():
             editor_window.destroy()
+
+
+        def generate_from_mainwindow():
+            conf["json_ld"]["@graph"][0]["license"] = f"{self.website_entry.get()}/license.txt"
+            conf["json_ld"]["@graph"][0]["description"] = f"{self.media_desc_entry.get()}"
+            conf["json_ld"]["@graph"][0]["author"]["name"] = f"{self.author_entry.get()}"
+            insert_text_ = json.dumps(conf["json_ld"], indent=4)
+            # delete contents from text_widget
+            text_widget.delete(0.0, 'end')
+            # insert new content
+            text_widget.insert(1.0, insert_text_)
 
         editor_window = customtkinter.CTkToplevel(self)
         editor_window.title("JSON-LD HEAD Editor")
@@ -607,8 +692,7 @@ class MainWindow(customtkinter.CTk):
 
         # frame for save and cancel button
         save_cancel_frame = customtkinter.CTkFrame(editor_window, fg_color='gray10')
-        save_cancel_frame.grid(row=1, column=0, sticky="ew", columnspan=2)
-        save_cancel_frame.grid_columnconfigure(0, weight=1)
+        save_cancel_frame.grid(row=1, column=0, sticky="ew", columnspan=2, padx=20)
         save_cancel_frame.grid_columnconfigure(1, weight=1)
 
         progress_bar = customtkinter.CTkProgressBar(main_frame, mode="indeterminate", width=300)
@@ -623,16 +707,24 @@ class MainWindow(customtkinter.CTk):
         text_widget = customtkinter.CTkTextbox(main_frame)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
 
+        button_width = 120
+
         # Save and cancel buttons
-        save_button = customtkinter.CTkButton(save_cancel_frame, text="Save", command=save_changes)
+        save_button = customtkinter.CTkButton(save_cancel_frame, text="Save", command=save_changes, width=button_width)
         save_button.grid(row=0, column=0, pady=20)
 
-        cancel_button = customtkinter.CTkButton(save_cancel_frame, text="Cancel", command=cancel_button_clicked)
-        cancel_button.grid(row=0, column=1, pady=20)
+        cancel_button = customtkinter.CTkButton(save_cancel_frame, text="Cancel", command=cancel_button_clicked, width=button_width)
+        cancel_button.grid(row=0, column=2, pady=20)
+
+        # generate from new conf button
+        generate_button = customtkinter.CTkButton(save_cancel_frame, text="Generate", command=generate_from_mainwindow, width=button_width)
+        generate_button.grid(row=0, column=1, pady=20)
+
 
         show_start_progress_bar("Retrieving JSON-LD content, please wait...")
 
-        insert_text = get_conf("json_ld")
+        conf = get_conf()
+        insert_text = json.dumps(conf["json_ld"], indent=4)
 
         text_widget.insert("1.0", insert_text)
 
@@ -640,6 +732,7 @@ class MainWindow(customtkinter.CTk):
 
 
     # --- 4. Add a method to open links ---
+    # noinspection PyMethodMayBeStatic
     def open_link(self, url):
         """Opens the given URL in a new browser tab."""
         webbrowser.open_new_tab(url)
