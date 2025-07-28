@@ -1,6 +1,8 @@
+<img alt="Logo" src="media/metabooster_logo.png" width="250">
+
 # Metabooster - Alpha
 
-**Metabooster** is a Python tool that automatically adds metadata to supported files within a specified directory. It
+**Metabooster** is a tool that automatically adds metadata to supported files within a specified directory. It
 is designed to facilitate consistent metadata improving cross-referencing on the internet.
 
 ---
@@ -38,6 +40,14 @@ is designed to facilitate consistent metadata improving cross-referencing on the
 
     * Creates a copy of the original directory to preserve original content.
     * All operations are performed on the copied directory.
+* ### New: GUI MODE
+  * <img alt="Logo" src="media/demo_main.png" width="600">
+  * Custom descriptions editor for all supported files
+  * JSON-LD Head Generator
+
+
+
+
 
 ---
 
@@ -91,11 +101,8 @@ is designed to facilitate consistent metadata improving cross-referencing on the
    ```bash
    git clone https://github.com/A-Temur/Metabooster.git
    ```
-2. Edit `conf.py` and define your metadata strings accordingly:
-3. Run the script.
-4. Select the source directory via the EasyGUI file picker.
-5. Provide a name for the output directory. The script will create a copy with this name and apply all changes there.
-
+2. install requirements
+3. run gui.py
 ---
 
 ## Requirements

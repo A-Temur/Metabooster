@@ -43,7 +43,7 @@ class MainWindow(customtkinter.CTk):
 
         self.conf_module = importlib.import_module("schema")
 
-        self.title("MetaBooster")
+        self.title("Metabooster")
         # Increased height to make space for the logo
         # self.geometry("1000x670")
         center_window(self, 844, 677)
@@ -109,11 +109,11 @@ class MainWindow(customtkinter.CTk):
 
         # --- 2. Load and Add Logo ---
         try:
-            gh_image_data = Image.open("../media/github-mark-white.png")
+            gh_image_data = Image.open("media/github-mark-white.png")
             gh_image = customtkinter.CTkImage(gh_image_data, gh_image_data, (50, 50))
 
             gh_label = customtkinter.CTkLabel(logo_frame, image=gh_image, text="")
-            gh_label.grid(row=0, column=0, sticky="e")
+            gh_label.grid(row=0, column=0, sticky="e", padx=15)
 
             # Make the label clickable
             gh_label.bind("<Button-1>", lambda e: self.open_link(self.GITHUB_URL))
@@ -121,7 +121,7 @@ class MainWindow(customtkinter.CTk):
             gh_label.configure(cursor="hand2")
 
             # Open the image using Pillow
-            logo_image_data = Image.open("../media/PyPortableLogo.png")
+            logo_image_data = Image.open("media/metabooster_logo_rounded.png")
             # Create a CTkImage object
             logo_image = customtkinter.CTkImage(
                 dark_image=logo_image_data,
@@ -133,7 +133,7 @@ class MainWindow(customtkinter.CTk):
             logo_label = customtkinter.CTkLabel(logo_frame, image=logo_image, text="")
             logo_label.grid(row=0, column=1)
 
-            kofi_image_data = Image.open("../media/support_me_on_kofi_badge_blue.png")
+            kofi_image_data = Image.open("media/support_me_on_kofi_badge_blue.png")
             kofi_image = customtkinter.CTkImage(kofi_image_data, kofi_image_data, (80, 50))
 
             kofi_label = customtkinter.CTkLabel(logo_frame, image=kofi_image, text="")
@@ -353,7 +353,7 @@ class MainWindow(customtkinter.CTk):
             self.original_conf["custom_descriptions"] = self.conf["custom_descriptions"]
 
         if self.save_jsonld or self.save_custom_desc:
-            with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+            with open("conf.json", "w", encoding="utf-8") as f:
                 json.dump(self.original_conf, f, indent=4)
 
         self.destroy()
@@ -362,7 +362,7 @@ class MainWindow(customtkinter.CTk):
     def load_conf(self):
         popup_progressbar = PopupProgressBar(self, "Loading Configuration", "Loading files...")
 
-        with open("conf_overwrite/conf.json", "r", encoding="utf-8") as f:
+        with open("conf.json", "r", encoding="utf-8") as f:
             custom_conf = json.load(f)
 
         self.original_conf = custom_conf
@@ -382,7 +382,7 @@ class MainWindow(customtkinter.CTk):
         popup_progressbar.progress_bar.update()
 
         self.keywords_entry.delete(0, "end")
-        self.keywords_entry.insert(0, custom_conf["keywords"])
+        self.keywords_entry.insert(0, ", ".join(custom_conf["keywords"]))
         popup_progressbar.progress_bar.update()
 
         self.title_prefix_entry.delete(0, "end")
@@ -422,16 +422,16 @@ class MainWindow(customtkinter.CTk):
         self.conf["autor"] = self.author_entry.get()
         self.conf["copyright_"] = self.copyright_entry.get()
         self.conf["default_media_description"] = self.media_desc_entry.get()
-        self.conf["keywords"] = self.keywords_entry.get()
-        self.conf["media_title_prefix"] = self.title_prefix_entry.get()
+        self.conf["keywords"] = [keyword.lstrip() for keyword in self.keywords_entry.get().strip().split(',') if keyword != ""]
+        self.conf["media_title_prefix"] = self.title_prefix_entry.get().rstrip() + " "
         self.conf["directory_title_prefix"] = self.dir_prefix_entry.get()
         self.conf["default_directory_description"] = self.dir_file_desc_entry.get()
         self.conf["add_metadata_json_to_html_file"] = self.jsonld_html_entry.get()
         self.conf["default_name_jsonld_file"] = self.jsonld_filename_entry.get()
-        self.conf["website"] = self.website_entry.get()
+        self.conf["website"] = self.website_entry.get().rstrip("/") + "/"
 
         popup.update()
-        with open("conf_overwrite/conf.json", "w", encoding="utf-8") as f:
+        with open("conf.json", "w", encoding="utf-8") as f:
             popup.update()
             json.dump(self.conf, f, indent=4)
 
@@ -665,7 +665,7 @@ class MainWindow(customtkinter.CTk):
 
 
         def generate_from_mainwindow():
-            conf["json_ld"]["@graph"][0]["license"] = f"{self.website_entry.get()}/license.txt"
+            conf["json_ld"]["@graph"][0]["license"] = f"{self.website_entry.get().rstrip("/")}/license.txt"
             conf["json_ld"]["@graph"][0]["description"] = f"{self.media_desc_entry.get()}"
             conf["json_ld"]["@graph"][0]["author"]["name"] = f"{self.author_entry.get()}"
             insert_text_ = json.dumps(conf["json_ld"], indent=4)

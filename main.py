@@ -4,11 +4,10 @@ Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
 import datetime
 import sys
 
-import easygui
 from PIL import Image
 from bs4 import BeautifulSoup
 from easygui import enterbox, msgbox
-from gui_test.gui_context import GuiContext
+from gui_context import GuiContext
 from mutagen.mp4 import MP4
 from shutil import copytree
 from os.path import basename, splitext
@@ -208,7 +207,7 @@ def add_metadata_to_gif(file_path_, metadata_, file_name_, metadata_jsonld_):
 
 def get_html_css_comment(file_name_, html=True):
     metadata_ = metadata_html_css.copy()
-    metadata_["Description"] = f"{file_name_} for {media_title_prefix}"
+    metadata_["Description"] = f"{file_name_} for {website}"
     metadata_ = "\n".join(f"{k}: {v}" for k, v in metadata_.items())
     if html:
         comment = html_brackets[0] + "\n" + metadata_ + "\n" + html_brackets[1]
@@ -221,7 +220,7 @@ def set_conf():
     """
     sets the configuration variables based on conf.json.
     """
-    with open("conf_overwrite/conf.json", 'r', encoding='utf-8') as cfr:
+    with open("conf.json", 'r', encoding='utf-8') as cfr:
         custom_conf = json.load(cfr)
 
     # for each entry in custom_conf, get the variable (with the same name) from schema.py
@@ -514,7 +513,7 @@ if __name__ == "__main__":
     with open(os.path.join(final_dir, default_name_jsonld_file), "w", encoding="utf-8") as json_file:
         # json.dump(... ensure_ascii=False, if you want to allow non-Ascii chars)
         # noinspection PyTypeChecker
-        json.dump(json_ld, json_file, indent=4)
+        json.dump(json_ld, json_file, indent=4, ensure_ascii=False)
 
     if bool(add_metadata_json_to_html_file):
 
@@ -532,10 +531,10 @@ if __name__ == "__main__":
             if not script_element:
                 script_element_exists_in_original = False
                 new_script_element = prettified_html.new_tag("script", type="application/ld+json")
-                new_script_element.string = json.dumps(json_ld, indent=4)
+                new_script_element.string = json.dumps(json_ld, indent=4, ensure_ascii=False)
                 prettified_html.find("head").append(new_script_element)
             else:
-                script_element.string = json.dumps(json_ld, indent=4)
+                script_element.string = json.dumps(json_ld, indent=4, ensure_ascii=False)
 
             prettified_html = prettified_html.prettify()
             pretty_script_part = re.search(r'<script type="application/ld\+json">(.*?)</script>', prettified_html,
@@ -545,7 +544,11 @@ if __name__ == "__main__":
                                     original_html,
                                     flags=re.DOTALL | re.IGNORECASE)
             else:
-                final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>', pretty_script_part,
+                final_html = re.sub(r'<script type="application/ld\+json">(.*?)</script>',
+                                    lambda m: pretty_script_part,  # since re.sub() treats the
+                                    # replacement string as a regex replacement pattern thus
+                                    # can result in (bad escape error).
+                                    # Inserting a function only takes the return value as is
                                     original_html,
                                     flags=re.DOTALL | re.IGNORECASE)
 
