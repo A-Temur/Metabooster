@@ -479,6 +479,7 @@ class MainWindow(customtkinter.CTk):
         ok_button.pack()
 
         dialog_.transient(self)
+        dialog_.wait_visibility()
         dialog_.grab_set()
         self.wait_window(dialog_)
 
@@ -584,6 +585,7 @@ class MainWindow(customtkinter.CTk):
             popup_bar.destroy()
             # make window visible
             new_window.attributes('-alpha', 1)
+            new_window.wait_visibility()
             new_window.grab_set()
         else:
             popup_bar.destroy()
@@ -678,6 +680,7 @@ class MainWindow(customtkinter.CTk):
         editor_window.title("JSON-LD HEAD Editor")
         center_window(editor_window, 490, 400)
         # editor_window.transient(self)
+        editor_window.wait_visibility()
         editor_window.grab_set()
 
         editor_window.grid_rowconfigure(0, weight=1)
@@ -759,6 +762,7 @@ class PopupProgressBar:
         # transient doesn't bring this window to the foreground when using overrideredirect(True)
         # self.window.transient(parent)
 
+        self.window.wait_visibility()
         self.window.focus_force()
         self.window.grab_set()
 
