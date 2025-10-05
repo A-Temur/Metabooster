@@ -7,20 +7,16 @@
 is designed to facilitate consistent metadata improving cross-referencing on the internet.
 
 ---
+## 📰 Table of Contents
 
-<!-- TOC -->
-* [Metabooster](#metabooster)
-  * [Features](#features)
-  * [Supported Files and Tags](#supported-files-and-tags)
-  * [Displaying the Metadata: `Windows 11` Default Properties Menu and `KDE Plasma (Dolphin)` (Tested on Fedora)](#displaying-the-metadata-windows-11-default-properties-menu-and-kde-plasma-dolphin-tested-on-fedora)
-  * [Displaying the Metadata: jExifToolGUI](#displaying-the-metadata-jexiftoolgui)
-  * [Requirements](#requirements)
-  * [Run from Source](#Run-from-Source)
-  * [Run from Portable Binray (Linux)](#Run-from-Portable-Binary)
-
-  * [Notes](#notes)
-<!-- TOC -->
-
+- [Features](#features)
+- [Supported Files and Tags](#supported-files-and-tags)
+- [Displaying the Metadata: `Windows 11` Default Properties Menu and `KDE Plasma (Dolphin)` (Tested on Fedora)](#displaying-the-metadata-windows-11-default-properties-menu-and-kde-plasma-dolphin-tested-on-fedora)
+- [Displaying the Metadata: jExifToolGUI](#displaying-the-metadata-jexiftoolgui)
+- [Requirements](#requirements)
+- [Run from Source](#Run-from-Source)
+- [Run from Portable Binray (Linux)](#Run-from-Portable-Binary)
+- [Notest](#notes)
 ---
 
 ## Features
@@ -47,10 +43,6 @@ is designed to facilitate consistent metadata improving cross-referencing on the
   * <img alt="Logo" src="media/demo_main.png" width="600">
   * Custom descriptions editor for all supported files
   * JSON-LD Head Generator
-
-
-
-
 
 ---
 
@@ -99,35 +91,31 @@ is designed to facilitate consistent metadata improving cross-referencing on the
 
 ## Requirements
 
-* Tcl/Tk runtime
 * exiftool (https://exiftool.org/)
   * Fedora: pkcon install exiftool
-* ffmpeg (https://ffmpeg.org/download.html)
+* ffmpeg (https://ffmpeg.org/download.html) 
+  * Installed by default on most Linux systems
 * on windows add exiftool and ffmpeg to PATH
-* Install required Python packages:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
 
 ---
 
 ## Run from Source
-
-1. Clone this repository:
-
+1. Clone repo and install requirements
    ```bash
    git clone https://github.com/A-Temur/Metabooster.git
+   cd Metabooster
+   pip install -r requirements.txt
    ```
-2. install requirements
-3. run gui.py
----
+2. Run Metabooster using GUI mode
+   ```bash
+   python gui.py
+   ```
 
 ---
 
 ## Run from Portable Binary
 
-1. Download Metabooster_Linux archive from Releases and extract
+1. Download [Metabooster_Linux](https://github.com/A-Temur/Metabooster/releases) archive from Releases and extract
 2. double click on Metabooster
 
 ---
