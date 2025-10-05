@@ -8,7 +8,7 @@ import os
 import runpy
 import sys
 import gui_context
-import webbrowser
+from webbrowser import open as webbrowser_open
 from tkinter import filedialog
 
 import customtkinter
@@ -552,6 +552,7 @@ class MainWindow(customtkinter.CTk):
         new_window.attributes("-alpha", 0)
         new_window.title("Create Custom Descriptions")
         center_window(new_window, 430, 566)
+        new_window.wait_visibility()
 
         # add widgets
         scrollable_frame = customtkinter.CTkScrollableFrame(new_window)
@@ -585,7 +586,6 @@ class MainWindow(customtkinter.CTk):
             popup_bar.destroy()
             # make window visible
             new_window.attributes('-alpha', 1)
-            new_window.wait_visibility()
             new_window.grab_set()
         else:
             popup_bar.destroy()
@@ -738,7 +738,7 @@ class MainWindow(customtkinter.CTk):
     # noinspection PyMethodMayBeStatic
     def open_link(self, url):
         """Opens the given URL in a new browser tab."""
-        webbrowser.open_new_tab(url)
+        webbrowser_open(url)
         print(f"Opening {url}...")
 
 
