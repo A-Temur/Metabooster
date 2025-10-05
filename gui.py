@@ -16,6 +16,7 @@ from PIL import Image
 # noinspection PyPackageRequirements
 from tktooltip import ToolTip
 
+import main
 
 def center_window(window, width, height):
     # Get screen dimensions

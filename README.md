@@ -1,6 +1,7 @@
-<img alt="Logo" src="media/metabooster_logo.png" width="250">
 
-# Metabooster - Alpha
+<p align="center"><img src="./media/metabooster_logo.png" alt="PyPortableLogo" width="150" height="150"></p>
+<p align="center"><strong>Metabooster -- Alpha</strong></p>
+
 
 **Metabooster** is a tool that automatically adds metadata to supported files within a specified directory. It
 is designed to facilitate consistent metadata improving cross-referencing on the internet.
@@ -13,8 +14,10 @@ is designed to facilitate consistent metadata improving cross-referencing on the
   * [Supported Files and Tags](#supported-files-and-tags)
   * [Displaying the Metadata: `Windows 11` Default Properties Menu and `KDE Plasma (Dolphin)` (Tested on Fedora)](#displaying-the-metadata-windows-11-default-properties-menu-and-kde-plasma-dolphin-tested-on-fedora)
   * [Displaying the Metadata: jExifToolGUI](#displaying-the-metadata-jexiftoolgui)
-  * [Usage](#usage)
   * [Requirements](#requirements)
+  * [Run from Source](#Run-from-Source)
+  * [Run from Portable Binray (Linux)](#Run-from-Portable-Binary)
+
   * [Notes](#notes)
 <!-- TOC -->
 
@@ -94,7 +97,22 @@ is designed to facilitate consistent metadata improving cross-referencing on the
 
 ---
 
-## Usage
+## Requirements
+
+* Tcl/Tk runtime
+* exiftool (https://exiftool.org/)
+  * Fedora: pkcon install exiftool
+* ffmpeg (https://ffmpeg.org/download.html)
+* on windows add exiftool and ffmpeg to PATH
+* Install required Python packages:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+---
+
+## Run from Source
 
 1. Clone this repository:
 
@@ -105,19 +123,15 @@ is designed to facilitate consistent metadata improving cross-referencing on the
 3. run gui.py
 ---
 
-## Requirements
+---
 
-* Python 3.13 with Tcl/Tk runtime (for easygui)
-* exiftool (https://exiftool.org/) and Pip package PyExifTool
-* ffmpeg (https://ffmpeg.org/download.html)
-* on windows add exiftool and ffmpeg to PATH
-* Install required Python packages:
+## Run from Portable Binary
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+1. Download Metabooster_Linux archive from Releases and extract
+2. double click on Metabooster
 
 ---
+
 
 ## Notes
 
