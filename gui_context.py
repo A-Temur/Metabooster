@@ -1,3 +1,6 @@
+"""
+Copyright 2025 github.com/A-Temur, OG-Brain.com, Abdullah Temur. All rights reserved.
+"""
 class GuiContext:
     _gui_ref = None
 

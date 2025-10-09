@@ -1,5 +1,5 @@
 """
-Copyright 2025 github.com/A-Temur, Abdullah Temur. All rights reserved.
+Copyright 2025 github.com/A-Temur, OG-Brain.com, Abdullah Temur. All rights reserved.
 """
 
 import importlib
