@@ -1,5 +1,5 @@
 
-<p align="center"><img src="./media/metabooster_logo.png" alt="PyPortableLogo" width="150" height="150"></p>
+<p align="center"><img src="./media/metabooster_logo_rounded.png" alt="PyPortableLogo" width="150" height="150"></p>
 <p align="center"><strong>Metabooster -- Alpha</strong></p>
 
 
