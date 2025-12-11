@@ -20,10 +20,18 @@ from tktooltip import ToolTip
 
 import main
 
+# scale from 1440p
+scale_factor = None
+
+
 def center_window(window, width, height):
     # Get screen dimensions
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
+
+    if scale_factor:
+        width = int(width * scale_factor)
+        height = int(height * scale_factor)
 
     # Calculate center position
     x = (screen_width - width) // 2
@@ -54,10 +62,24 @@ class MainWindow(customtkinter.CTk):
         self.conf_module = importlib.import_module("schema")
 
         self.title("Metabooster")
-        # Increased height to make space for the logo
-        # self.geometry("1000x670")
-        center_window(self, 844, 677)
-        self.default_size = (844, 677)
+
+        global scale_factor
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+
+        self.default_size = (844, 687)
+
+        if screen_height != 1440:
+            original_width = 2560
+            original_height = 1440
+            scale_factor = min(screen_width / original_width, screen_height / original_height)
+
+        center_window(self, self.default_size[0], self.default_size[1])
+
+        if scale_factor:
+            customtkinter.set_widget_scaling(scale_factor)
+
+
 
         # list of supported media files with custom descriptions
         self.supported_files = [".jpg", ".jpeg", ".png", ".gif", ".mp4", ".heic", ".pdf"]
@@ -148,9 +170,11 @@ class MainWindow(customtkinter.CTk):
                 default_width = self.default_size[0]
                 default_height = self.default_size[1]
                 if lang_choice == "English":
-                    self.geometry(f"{default_width}x{default_height}")
+                    center_window(self, default_width, default_height)
+                    # self.geometry(f"{default_width}x{default_height}")
                 else:
-                    self.geometry(f"{default_width + 70}x{default_height}")
+                    center_window(self, default_width + 70, default_height)
+                    # self.geometry(f"{default_width + 70}x{default_height}")
                 self.current_language = lang_choice
 
         # Open the image using Pillow
